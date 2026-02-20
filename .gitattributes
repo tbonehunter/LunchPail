@@ -1,0 +1,11 @@
+# .gitattributes — LunchPail
+
+# Normalize all text files to LF in the repo, CRLF on Windows checkout
+* text=auto eol=crlf
+
+# Force binary files to never be line-ending converted
+*.png binary
+*.jpg binary
+*.zip binary
+*.dll binary
+*.pdb binary

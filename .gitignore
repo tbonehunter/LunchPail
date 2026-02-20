@@ -17,6 +17,9 @@ obj/
 packages/
 project.lock.json
 
+# Release archives
+*.zip
+
 # OS
 Thumbs.db
 .DS_Store
