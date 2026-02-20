@@ -1,0 +1,16 @@
+{
+  "Name": "Lunch Pail",
+  "Author": "tbonehunter",
+  "Version": "1.0.0",
+  "Description": "Automatically consumes food when health or stamina drops below a configurable threshold.",
+  "UniqueID": "tbonehunter.LunchPail",
+  "EntryDll": "LunchPail.dll",
+  "MinimumApiVersion": "4.0.0",
+  "Dependencies": [
+    {
+      "UniqueID": "spacechase0.GenericModConfigMenu",
+      "IsRequired": false
+    }
+  ],
+  "UpdateKeys": []
+}

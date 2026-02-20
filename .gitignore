@@ -1,0 +1,22 @@
+# .gitignore — LunchPail Stardew Valley SMAPI Mod
+
+# Build output
+bin/
+obj/
+
+# Visual Studio / Rider
+.vs/
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docview
+
+# NuGet
+*.nupkg
+packages/
+project.lock.json
+
+# OS
+Thumbs.db
+.DS_Store
