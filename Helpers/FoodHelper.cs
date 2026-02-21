@@ -87,24 +87,28 @@ namespace TBoneHunter.LunchPail.Helpers
         /// <summary>
         /// Returns true if the player's stamina has dropped to or below
         /// the trigger threshold for the given food item and offset setting.
-        /// Trigger point = food's stamina restore% - offset%
+        /// Trigger point = 100% - food's restore% - offset%
+        /// At offset 0, fires exactly when eating the food would fill
+        /// the player back to full. Higher offsets wait deeper into the deficit.
         /// </summary>
         public static bool ShouldTriggerStamina(SObject obj, Farmer player, int offsetPercent)
         {
             float restorePercent = GetStaminaRestorePercent(obj, player);
-            float triggerPoint = restorePercent - offsetPercent;
+            float triggerPoint = Math.Max(0f, 100f - restorePercent - offsetPercent);
             return GetCurrentStaminaPercent(player) <= triggerPoint;
         }
 
         /// <summary>
         /// Returns true if the player's health has dropped to or below
         /// the trigger threshold for the given food item and offset setting.
-        /// Trigger point = food's health restore% - offset%
+        /// Trigger point = 100% - food's restore% - offset%
+        /// At offset 0, fires exactly when eating the food would fill
+        /// the player back to full. Higher offsets wait deeper into the deficit.
         /// </summary>
         public static bool ShouldTriggerHealth(SObject obj, Farmer player, int offsetPercent)
         {
             float restorePercent = GetHealthRestorePercent(obj, player);
-            float triggerPoint = restorePercent - offsetPercent;
+            float triggerPoint = Math.Max(0f, 100f - restorePercent - offsetPercent);
             return GetCurrentHealthPercent(player) <= triggerPoint;
         }
 
