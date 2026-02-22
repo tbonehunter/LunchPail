@@ -1,4 +1,5 @@
 // ModEntry.cs
+using Microsoft.Xna.Framework.Graphics;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewValley;
@@ -22,9 +23,10 @@ namespace TBoneHunter.LunchPail
         private LunchPailData _data = null!;
         private ConsumptionManager _consumptionManager = null!;
 
-        private const string DataKey      = "tbonehunter.LunchPail.data";
-        private const string UnlockItemId = "tbonehunter.LunchPail_Unlock";
-        private const string RecipeId     = "tbonehunter.LunchPail_Recipe";
+        private const string DataKey        = "tbonehunter.LunchPail.data";
+        private const string UnlockItemId   = "tbonehunter.LunchPail_Unlock";
+        private const string RecipeId       = "tbonehunter.LunchPail_Recipe";
+        private const string ObjectTexture  = "Mods/TBoneHunter.LunchPail/Objects";
 
         // ----------------------------------------------------------------
         // SMAPI Entry
@@ -83,6 +85,12 @@ namespace TBoneHunter.LunchPail
 
         private void OnAssetRequested(object? sender, AssetRequestedEventArgs args)
         {
+            // Provide the custom object sprite sheet from Assets/lunchpail.png
+            if (args.Name.IsEquivalentTo(ObjectTexture))
+            {
+                args.LoadFromModFile<Texture2D>("Assets/lunchpail.png", AssetLoadPriority.Medium);
+            }
+
             if (args.Name.IsEquivalentTo("Data/Objects"))
             {
                 args.Edit(asset =>
@@ -96,7 +104,10 @@ namespace TBoneHunter.LunchPail
                         Type        = "Basic",
                         Category    = StardewValley.Object.litterCategory,
                         Price       = 0,
-                        Edibility   = -300
+                        Edibility   = -300,
+                        // Point to our custom 16x16 sprite sheet; index 0 = first (only) sprite
+                        Texture     = ObjectTexture,
+                        SpriteIndex = 0
                     };
                     Monitor.Log("[LunchPail] Data/Objects edit fired. Unlock item registered.", LogLevel.Debug);
                 });
