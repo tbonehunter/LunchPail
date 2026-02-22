@@ -25,16 +25,16 @@ namespace TBoneHunter.LunchPail
         private readonly Func<Config> _config;
         private readonly Func<LunchPailData> _data;
 
-        private bool _staminaFallbackNotified = false;
-        private bool _healthFallbackNotified = false;
+        // Notification flags — each fires once per day (reset by ResetSession).
+        private bool _staminaLowNotified       = false;
+        private bool _staminaExhaustedNotified = false;
+        private bool _healthLowNotified        = false;
+        private bool _healthExhaustedNotified  = false;
+        private bool _allLowNotified           = false;  // fallback compartment running low
+        private bool _allExhaustedNotified     = false;  // both compartments empty
 
-        // Cooldown counters for fallback reminder HUD messages.
-        // Prevents HUD spam by throttling reminders to ~5 seconds.
-        private int _staminaFallbackReminderCooldown = 0;
-        private int _healthFallbackReminderCooldown = 0;
-        private const int FallbackReminderInterval = 300; // ~5 seconds at 60 ticks/sec
-
-        private const int TickInterval = 30; // twice per second
+        private const int HudDuration  = 10000; // 10 seconds in ms
+        private const int TickInterval = 30;    // twice per second
 
         // ----------------------------------------------------------------
         // Constructor
@@ -61,10 +61,12 @@ namespace TBoneHunter.LunchPail
         /// </summary>
         public void ResetSession()
         {
-            _staminaFallbackNotified = false;
-            _healthFallbackNotified = false;
-            _staminaFallbackReminderCooldown = 0;
-            _healthFallbackReminderCooldown = 0;
+            _staminaLowNotified       = false;
+            _staminaExhaustedNotified = false;
+            _healthLowNotified        = false;
+            _healthExhaustedNotified  = false;
+            _allLowNotified           = false;
+            _allExhaustedNotified     = false;
         }
 
         /// <summary>
@@ -101,41 +103,52 @@ namespace TBoneHunter.LunchPail
                 {
                     FoodHelper.SilentConsume(next, player);
                     _monitor.Log($"[LunchPail] Auto-consumed {next.DisplayName} for stamina.", LogLevel.Trace);
-                    CheckStaminaSupplyWarning(player, data);
-                }
 
-                // Reset fallback flag only when primary compartment has items,
-                // regardless of whether the trigger fired this tick.
-                _staminaFallbackNotified = false;
-                _staminaFallbackReminderCooldown = 0;
+                    // Warn once if stamina supply is now low
+                    if (!_staminaLowNotified &&
+                        CountRemainingServings(player, data.StaminaCompartment) <= config.LowSupplyThreshold)
+                    {
+                        ShowHUD("Your stamina food supply is low.", isError: false);
+                        _staminaLowNotified = true;
+                    }
+                }
                 return;
             }
 
-            // Stamina compartment empty — attempt fallback to health compartment
+            // Primary stamina compartment empty — attempt fallback to health compartment
             var fallbackFoods = ResolveFoods(player, data.HealthCompartment, byStamina: true, config);
-            if (fallbackFoods.Count == 0) return;
+
+            if (fallbackFoods.Count == 0)
+            {
+                // Both compartments empty
+                if (!_allExhaustedNotified)
+                {
+                    ShowHUD("Your food supply is exhausted.", isError: true);
+                    _allExhaustedNotified = true;
+                }
+                return;
+            }
 
             var fallbackNext = fallbackFoods.First();
             if (!FoodHelper.ShouldTriggerStamina(fallbackNext, player, config.StaminaOffset)) return;
 
-            if (!_staminaFallbackNotified)
+            // Notify once that stamina compartment is exhausted and fallback is active
+            if (!_staminaExhaustedNotified)
             {
-                ShowHUD("Lunch Pail: Stamina food depleted! Drawing from health compartment.", isError: true);
-                _staminaFallbackNotified = true;
-                _staminaFallbackReminderCooldown = 0;
-            }
-            else
-            {
-                _staminaFallbackReminderCooldown++;
-                if (_staminaFallbackReminderCooldown >= FallbackReminderInterval)
-                {
-                    ShowHUD("Lunch Pail: Still drawing stamina food from health compartment!", isError: false);
-                    _staminaFallbackReminderCooldown = 0;
-                }
+                ShowHUD("Your stamina supply is exhausted, now consuming from the health supply.", isError: true);
+                _staminaExhaustedNotified = true;
             }
 
             FoodHelper.SilentConsume(fallbackNext, player);
             _monitor.Log($"[LunchPail] Fallback stamina consume: {fallbackNext.DisplayName}.", LogLevel.Trace);
+
+            // Warn once if the fallback compartment is also running low
+            if (!_allLowNotified &&
+                CountRemainingServings(player, data.HealthCompartment) <= config.LowSupplyThreshold)
+            {
+                ShowHUD("Your food supply will soon run out.", isError: false);
+                _allLowNotified = true;
+            }
         }
 
         // ----------------------------------------------------------------
@@ -153,63 +166,52 @@ namespace TBoneHunter.LunchPail
                 {
                     FoodHelper.SilentConsume(next, player);
                     _monitor.Log($"[LunchPail] Auto-consumed {next.DisplayName} for health.", LogLevel.Trace);
-                    CheckHealthSupplyWarning(player, data);
-                }
 
-                // Reset fallback flag only when primary compartment has items,
-                // regardless of whether the trigger fired this tick.
-                _healthFallbackNotified = false;
-                _healthFallbackReminderCooldown = 0;
+                    // Warn once if health supply is now low
+                    if (!_healthLowNotified &&
+                        CountRemainingServings(player, data.HealthCompartment) <= config.LowSupplyThreshold)
+                    {
+                        ShowHUD("Your health food supply is low.", isError: false);
+                        _healthLowNotified = true;
+                    }
+                }
                 return;
             }
 
-            // Health compartment empty — attempt fallback to stamina compartment
+            // Primary health compartment empty — attempt fallback to stamina compartment
             var fallbackFoods = ResolveFoods(player, data.StaminaCompartment, byStamina: false, config);
-            if (fallbackFoods.Count == 0) return;
+
+            if (fallbackFoods.Count == 0)
+            {
+                // Both compartments empty
+                if (!_allExhaustedNotified)
+                {
+                    ShowHUD("Your food supply is exhausted.", isError: true);
+                    _allExhaustedNotified = true;
+                }
+                return;
+            }
 
             var fallbackNext = fallbackFoods.First();
             if (!FoodHelper.ShouldTriggerHealth(fallbackNext, player, config.HealthOffset)) return;
 
-            if (!_healthFallbackNotified)
+            // Notify once that health compartment is exhausted and fallback is active
+            if (!_healthExhaustedNotified)
             {
-                ShowHUD("Lunch Pail: Health food depleted! Drawing from stamina compartment.", isError: true);
-                _healthFallbackNotified = true;
-                _healthFallbackReminderCooldown = 0;
-            }
-            else
-            {
-                _healthFallbackReminderCooldown++;
-                if (_healthFallbackReminderCooldown >= FallbackReminderInterval)
-                {
-                    ShowHUD("Lunch Pail: Still drawing health food from stamina compartment!", isError: false);
-                    _healthFallbackReminderCooldown = 0;
-                }
+                ShowHUD("Your health supply is exhausted, now consuming from the stamina supply.", isError: true);
+                _healthExhaustedNotified = true;
             }
 
             FoodHelper.SilentConsume(fallbackNext, player);
             _monitor.Log($"[LunchPail] Fallback health consume: {fallbackNext.DisplayName}.", LogLevel.Trace);
-        }
 
-        // ----------------------------------------------------------------
-        // Private: Supply warnings
-        // ----------------------------------------------------------------
-
-        private void CheckStaminaSupplyWarning(Farmer player, LunchPailData data)
-        {
-            int remaining = CountRemainingTagged(player, data.StaminaCompartment);
-            if (remaining == 1)
-                ShowHUD("Lunch Pail: Stamina food supply is low!", isError: false);
-            else if (remaining == 0)
-                ShowHUD("Lunch Pail: Stamina compartment is empty!", isError: true);
-        }
-
-        private void CheckHealthSupplyWarning(Farmer player, LunchPailData data)
-        {
-            int remaining = CountRemainingTagged(player, data.HealthCompartment);
-            if (remaining == 1)
-                ShowHUD("Lunch Pail: Health food supply is low!", isError: false);
-            else if (remaining == 0)
-                ShowHUD("Lunch Pail: Health compartment is empty!", isError: true);
+            // Warn once if the fallback compartment is also running low
+            if (!_allLowNotified &&
+                CountRemainingServings(player, data.StaminaCompartment) <= config.LowSupplyThreshold)
+            {
+                ShowHUD("Your food supply will soon run out.", isError: false);
+                _allLowNotified = true;
+            }
         }
 
         // ----------------------------------------------------------------
@@ -237,22 +239,24 @@ namespace TBoneHunter.LunchPail
         }
 
         /// <summary>
-        /// Counts how many distinct tagged item stacks from a compartment
-        /// remain in inventory. Warning fires when only 1 stack type remains.
+        /// Counts the total number of servings (sum of stack sizes) of all
+        /// tagged items from a compartment that remain in the player's inventory.
         /// </summary>
-        private int CountRemainingTagged(Farmer player, List<LunchPailData.FoodTag> tags)
+        private int CountRemainingServings(Farmer player, List<LunchPailData.FoodTag> tags)
         {
-            int count = 0;
+            int total = 0;
             foreach (var tag in tags)
             {
-                if (FoodHelper.FindTaggedItemInInventory(player, tag) != null)
-                    count++;
+                var item = FoodHelper.FindTaggedItemInInventory(player, tag);
+                if (item != null)
+                    total += item.Stack;
             }
-            return count;
+            return total;
         }
 
         /// <summary>
-        /// Displays a HUD message. Error type shows red, standard shows yellow.
+        /// Displays a HUD message with a 10-second duration.
+        /// Error type shows red, standard shows yellow.
         /// </summary>
         private static void ShowHUD(string message, bool isError)
         {
@@ -260,7 +264,7 @@ namespace TBoneHunter.LunchPail
                 ? HUDMessage.error_type
                 : HUDMessage.achievement_type;
 
-            Game1.addHUDMessage(new HUDMessage(message, messageType));
+            Game1.addHUDMessage(new HUDMessage(message, messageType) { timeLeft = HudDuration });
         }
     }
 }

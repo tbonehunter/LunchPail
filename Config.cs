@@ -38,6 +38,14 @@ namespace TBoneHunter.LunchPail
         /// </summary>
         public FoodSortOrder SortOrder { get; set; } = FoodSortOrder.LowestFirst;
 
+        // --- Supply Warning Threshold ---
+
+        /// <summary>
+        /// Number of servings remaining in a compartment at which a low-supply
+        /// warning is shown. Edit directly in config.json if desired.
+        /// </summary>
+        public int LowSupplyThreshold { get; set; } = 3;
+
         // --- Keybind ---
 
         /// <summary>
