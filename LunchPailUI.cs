@@ -76,6 +76,15 @@ namespace TBoneHunter.LunchPail
             _config = config;
             _consumptionManager = consumptionManager;
 
+            // Clear the location's afterQuestion delegate when this menu closes
+            // for any reason (X button, ESC, outside click). Without this, closing
+            // mid-dialogue-flow leaves the farmer movement-blocked indefinitely.
+            exitFunction = () =>
+            {
+                Game1.currentLocation.afterQuestion = null;
+                _isClosing = true;
+            };
+
             RefreshLists();
         }
 
@@ -117,8 +126,7 @@ namespace TBoneHunter.LunchPail
                 .ToList();
         }
 
-        // ----------------------------------------------------------------
-        // Draw
+        // ----------------------------------------------------------------        // Draw
         // ----------------------------------------------------------------
 
         public override void draw(SpriteBatch b)

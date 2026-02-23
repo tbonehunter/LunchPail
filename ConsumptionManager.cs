@@ -349,8 +349,8 @@ namespace TBoneHunter.LunchPail
                         int healthReduction  = shortage / 2;
                         int staminaReduction = shortage - healthReduction;
 
-                        ApplyBudgetReduction(healthTags,  healthReduction);
-                        ApplyBudgetReduction(staminaTags, staminaReduction);
+                        ApplyBudgetReduction(healthTags,  healthReduction,  data.HealthCompartment);
+                        ApplyBudgetReduction(staminaTags, staminaReduction, data.StaminaCompartment);
 
                         // Fire HUD once per occurrence; re-arms on next day (ResetSession clears the set).
                         if (!_deficitNotified.Contains(key))
@@ -395,8 +395,11 @@ namespace TBoneHunter.LunchPail
         /// consuming from each tag sequentially and clamping to consumed-today
         /// so the budget never drops below what has already been auto-eaten.
         /// </summary>
-        private void ApplyBudgetReduction(List<LunchPailData.FoodTag> tags, int reduction)
+        private void ApplyBudgetReduction(
+            List<LunchPailData.FoodTag> tags, int reduction,
+            List<LunchPailData.FoodTag> compartment)
         {
+            var toRemove = new List<LunchPailData.FoodTag>();
             foreach (var tag in tags)
             {
                 if (reduction <= 0) break;
@@ -405,7 +408,12 @@ namespace TBoneHunter.LunchPail
                 int canReduce        = Math.Max(0, Math.Min(currentRemaining, reduction));
                 tag.MaxServings     -= canReduce;
                 reduction           -= canReduce;
+                // A zeroed tag is useless and causes ghost rows in the UI — remove it.
+                if (tag.MaxServings <= 0)
+                    toRemove.Add(tag);
             }
+            foreach (var tag in toRemove)
+                compartment.Remove(tag);
         }
 
         /// <summary>
