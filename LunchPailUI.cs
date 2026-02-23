@@ -28,12 +28,11 @@ namespace TBoneHunter.LunchPail
         // Layout constants
         // ----------------------------------------------------------------
 
-        private const int PanelWidth = 260; // widened 30% for label legibility
+        private const int PanelWidth = 300;
         private const int PanelHeight = 400;
         private const int ItemHeight = 48;
         private const int ItemIconSize = 32;
         private const int Padding = 12;
-        private const int XButtonSize = 16;
         private const int HeaderHeight = 60;
         private const int TotalWidth = PanelWidth * 3 + Padding * 4;
         private const int TotalHeight = PanelHeight + HeaderHeight;
@@ -138,9 +137,9 @@ namespace TBoneHunter.LunchPail
             DrawPanel(b, healthPanel, Color.Crimson * 0.3f, "Health");
 
             // Item lists
-            DrawItemList(b, _staminaFoods, _staminaTags, staminaPanel, showX: true);
+            DrawItemList(b, _staminaFoods, _staminaTags, staminaPanel);
             DrawUnassignedList(b, _unassignedFoods, centerPanel);
-            DrawItemList(b, _healthFoods, _healthTags, healthPanel, showX: true);
+            DrawItemList(b, _healthFoods, _healthTags, healthPanel);
 
             // Close button
             base.draw(b);
@@ -169,16 +168,8 @@ namespace TBoneHunter.LunchPail
                 return;
             }
 
-            // Stamina panel: X button takes priority over item body click
+            // Stamina panel: item click — open adjust/unassign prompt
             var staminaPanel = GetPanelBounds(0);
-            int staminaXIndex = GetXButtonIndexAtPoint(x, y, staminaPanel, _staminaFoods.Count);
-            if (staminaXIndex >= 0)
-            {
-                UnassignFood(_staminaFoods[staminaXIndex], isStamina: true);
-                return;
-            }
-
-            // Stamina panel: item body click — open adjust/unassign prompt
             int staminaIndex = GetItemIndexAtPoint(x, y, staminaPanel, _staminaFoods.Count);
             if (staminaIndex >= 0)
             {
@@ -186,16 +177,8 @@ namespace TBoneHunter.LunchPail
                 return;
             }
 
-            // Health panel: X button takes priority over item body click
+            // Health panel: item click — open adjust/unassign prompt
             var healthPanel = GetPanelBounds(2);
-            int healthXIndex = GetXButtonIndexAtPoint(x, y, healthPanel, _healthFoods.Count);
-            if (healthXIndex >= 0)
-            {
-                UnassignFood(_healthFoods[healthXIndex], isStamina: false);
-                return;
-            }
-
-            // Health panel: item body click — open adjust/unassign prompt
             int healthIndex = GetItemIndexAtPoint(x, y, healthPanel, _healthFoods.Count);
             if (healthIndex >= 0)
             {
@@ -411,7 +394,7 @@ namespace TBoneHunter.LunchPail
         /// </param>
         private void DrawItemList(
             SpriteBatch b, List<SObject> items, List<LunchPailData.FoodTag> tags,
-            Rectangle panel, bool showX)
+            Rectangle panel)
         {
             for (int i = 0; i < items.Count; i++)
             {
@@ -419,10 +402,11 @@ namespace TBoneHunter.LunchPail
                 var tag  = tags[i];
                 int itemY = panel.Y + 40 + i * ItemHeight;
 
+                // Hide the native stack count — we display the budget number in the label instead.
                 item.drawInMenu(b,
                     new Vector2(panel.X + Padding, itemY),
                     0.75f, 1f, 0.9f,
-                    StackDrawType.Draw,
+                    StackDrawType.Hide,
                     Color.White, false);
 
                 // Show the serving budget alongside the name when a specific limit is set.
@@ -434,14 +418,6 @@ namespace TBoneHunter.LunchPail
                     Game1.smallFont,
                     new Vector2(panel.X + Padding + ItemIconSize + 4, itemY + 8),
                     Color.White);
-
-                if (showX)
-                {
-                    b.Draw(Game1.mouseCursors,
-                        GetXButtonRect(panel, i),
-                        new Rectangle(337, 494, 12, 12),
-                        Color.White);
-                }
             }
         }
 
@@ -465,32 +441,12 @@ namespace TBoneHunter.LunchPail
             }
         }
 
-        private Rectangle GetXButtonRect(Rectangle panel, int index)
-        {
-            int itemY = panel.Y + 40 + index * ItemHeight;
-            return new Rectangle(
-                panel.X + PanelWidth - XButtonSize - Padding,
-                itemY + (ItemHeight - XButtonSize) / 2,
-                XButtonSize,
-                XButtonSize);
-        }
-
         private int GetItemIndexAtPoint(int x, int y, Rectangle panel, int count)
         {
             for (int i = 0; i < count; i++)
             {
                 int itemY = panel.Y + 40 + i * ItemHeight;
                 if (new Rectangle(panel.X, itemY, PanelWidth, ItemHeight).Contains(x, y))
-                    return i;
-            }
-            return -1;
-        }
-
-        private int GetXButtonIndexAtPoint(int x, int y, Rectangle panel, int count)
-        {
-            for (int i = 0; i < count; i++)
-            {
-                if (GetXButtonRect(panel, i).Contains(x, y))
                     return i;
             }
             return -1;
