@@ -46,6 +46,16 @@ namespace TBoneHunter.LunchPail
         /// </summary>
         public int LowSupplyThreshold { get; set; } = 3;
 
+        // --- Budget Adjustment ---
+
+        /// <summary>
+        /// When true, MaxServings for each budgeted item is automatically lowered
+        /// to match the actual inventory stack when a deficit is detected mid-day.
+        /// When false, a HUD alert fires instead and deficit rows are highlighted
+        /// in red inside the Lunch Pail UI.
+        /// </summary>
+        public bool AutoAdjustBudget { get; set; } = true;
+
         // --- Keybind ---
 
         /// <summary>

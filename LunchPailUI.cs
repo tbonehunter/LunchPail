@@ -440,16 +440,23 @@ namespace TBoneHunter.LunchPail
                     Color.White, false);
 
                 // Check whether actual inventory has fallen below the remaining daily budget.
-                int consumed    = _consumptionManager.GetConsumedToday(tag);
-                int budgetLeft  = tag.MaxServings == int.MaxValue ? int.MaxValue : tag.MaxServings - consumed;
-                bool inDeficit  = tag.MaxServings != int.MaxValue && item.Stack < budgetLeft;
+                // IsInDeficit uses the same aggregated cross-compartment logic as CheckDeficits.
+                bool inDeficit = _consumptionManager.IsInDeficit(tag);
+
+                // In alert-only mode, draw a faint red tint behind the row to flag the deficit.
+                if (inDeficit && !_config().AutoAdjustBudget)
+                {
+                    b.Draw(Game1.fadeToBlackRect,
+                        new Rectangle(panel.X, itemY, PanelWidth, ItemHeight),
+                        Color.Red * 0.25f);
+                }
 
                 // Show the serving budget alongside the name when a specific limit is set.
-                // Draw in red when the real stack is below the remaining budget.
+                // Tint label red in alert-only mode so the deficit stands out clearly.
                 string label = tag.MaxServings == int.MaxValue
                     ? item.DisplayName
                     : $"{item.DisplayName} (×{tag.MaxServings})";
-                Color labelColor = inDeficit ? Color.Red : Color.White;
+                Color labelColor = (inDeficit && !_config().AutoAdjustBudget) ? Color.Red : Color.White;
 
                 Utility.drawTextWithShadow(b, label,
                     Game1.smallFont,

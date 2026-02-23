@@ -50,6 +50,7 @@ namespace TBoneHunter.LunchPail
             helper.Events.GameLoop.SaveLoaded     += OnSaveLoaded;
             helper.Events.GameLoop.Saving         += OnSaving;
             helper.Events.GameLoop.DayStarted     += OnDayStarted;
+            helper.Events.GameLoop.DayEnding      += OnDayEnding;
             helper.Events.GameLoop.UpdateTicked   += OnUpdateTicked;
             helper.Events.Input.ButtonPressed     += OnButtonPressed;
             helper.Events.Player.InventoryChanged += OnInventoryChanged;
@@ -155,6 +156,18 @@ namespace TBoneHunter.LunchPail
         private void OnDayStarted(object? sender, DayStartedEventArgs e)
         {
             _consumptionManager.ResetSession();
+        }
+
+        // ----------------------------------------------------------------
+        // Day ending: clear compartments so the pail is empty for the next morning
+        // ----------------------------------------------------------------
+
+        private void OnDayEnding(object? sender, DayEndingEventArgs e)
+        {
+            _data.StaminaCompartment.Clear();
+            _data.HealthCompartment.Clear();
+            Helper.Data.WriteSaveData(DataKey, _data);
+            Monitor.Log("[LunchPail] Compartments cleared for end of day.", LogLevel.Debug);
         }
 
         // ----------------------------------------------------------------

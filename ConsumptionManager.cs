@@ -97,7 +97,7 @@ namespace TBoneHunter.LunchPail
 
             CheckStamina(player, data, config);
             CheckHealth(player, data, config);
-            CheckDeficits(player, data);
+            CheckDeficits(player, data, config);
         }
 
         // ----------------------------------------------------------------
@@ -266,43 +266,71 @@ namespace TBoneHunter.LunchPail
             _consumedToday.GetValueOrDefault(GetTagKey(tag));
 
         /// <summary>
+        /// Returns true when the given tag's item is currently in a deficit state
+        /// (actual inventory below combined remaining budget). Used by LunchPailUI
+        /// to highlight deficit rows in alert-only mode.
+        /// </summary>
+        public bool IsInDeficit(LunchPailData.FoodTag tag) =>
+            _deficitNotified.Contains(GetTagKey(tag));
+
+        /// <summary>
         /// Returns a stable string key for a FoodTag, used to key the consumed-today dictionary.
         /// </summary>
         private static string GetTagKey(LunchPailData.FoodTag tag) =>
             tag.ItemId + "_" + tag.Quality;
 
         /// <summary>
-        /// Checks all tagged items across both compartments and fires a one-time-per-occurrence
-        /// HUD alert for any whose real inventory stack has fallen below the COMBINED remaining
-        /// daily budget across both compartments (e.g. Salad assigned 5 to stamina + 5 to health
-        /// requires 10 in inventory; 9 salads would trigger a deficit alert).
+        /// Checks all tagged items across both compartments. When a real inventory
+        /// stack has fallen below the combined remaining budget, either auto-adjusts
+        /// MaxServings (AutoAdjustBudget=true) or fires a HUD alert and marks the
+        /// item as in-deficit for UI highlighting (AutoAdjustBudget=false).
         /// </summary>
-        private void CheckDeficits(Farmer player, LunchPailData data)
+        private void CheckDeficits(Farmer player, LunchPailData data, Config config)
         {
-            // Collect all finite-budget tags from both compartments and sum remaining
-            // budget per unique item key so cross-compartment assignments are totalled.
-            var totalRemainingByKey = new Dictionary<string, (int totalRemaining, LunchPailData.FoodTag sampleTag)>();
+            // Aggregate remaining budget per unique item key across both compartments.
+            // Keep per-compartment tag lists so auto-adjust can reduce them independently.
+            var byKey = new Dictionary<string, (
+                int totalRemaining,
+                LunchPailData.FoodTag sampleTag,
+                List<LunchPailData.FoodTag> staminaTags,
+                List<LunchPailData.FoodTag> healthTags)>();
 
-            foreach (var tag in data.StaminaCompartment.Concat(data.HealthCompartment))
+            foreach (bool isStamina in new[] { true, false })
             {
-                if (tag.MaxServings == int.MaxValue) continue;
+                var compartment = isStamina ? data.StaminaCompartment : data.HealthCompartment;
+                foreach (var tag in compartment)
+                {
+                    if (tag.MaxServings == int.MaxValue) continue;
 
-                var key      = GetTagKey(tag);
-                int consumed  = _consumedToday.GetValueOrDefault(key);
-                int remaining = tag.MaxServings - consumed;
-                if (remaining <= 0) continue;
+                    var key      = GetTagKey(tag);
+                    int consumed  = _consumedToday.GetValueOrDefault(key);
+                    int remaining = tag.MaxServings - consumed;
+                    if (remaining <= 0) continue;
 
-                if (totalRemainingByKey.TryGetValue(key, out var existing))
-                    totalRemainingByKey[key] = (existing.totalRemaining + remaining, existing.sampleTag);
-                else
-                    totalRemainingByKey[key] = (remaining, tag);
+                    if (byKey.TryGetValue(key, out var existing))
+                    {
+                        if (isStamina) existing.staminaTags.Add(tag);
+                        else           existing.healthTags.Add(tag);
+                        byKey[key] = (existing.totalRemaining + remaining,
+                            existing.sampleTag, existing.staminaTags, existing.healthTags);
+                    }
+                    else
+                    {
+                        var stList = new List<LunchPailData.FoodTag>();
+                        var hlList = new List<LunchPailData.FoodTag>();
+                        if (isStamina) stList.Add(tag); else hlList.Add(tag);
+                        byKey[key] = (remaining, tag, stList, hlList);
+                    }
+                }
             }
 
-            foreach (var kvp in totalRemainingByKey)
+            foreach (var kvp in byKey)
             {
                 var key            = kvp.Key;
                 int totalRemaining = kvp.Value.totalRemaining;
                 var sampleTag      = kvp.Value.sampleTag;
+                var staminaTags    = kvp.Value.staminaTags;
+                var healthTags     = kvp.Value.healthTags;
 
                 var item        = FoodHelper.FindTaggedItemInInventory(player, sampleTag);
                 int actualStack = item?.Stack ?? 0;
@@ -313,16 +341,42 @@ namespace TBoneHunter.LunchPail
 
                 if (actualStack < totalRemaining)
                 {
-                    // Fire alert once per occurrence; re-arms when deficit clears.
-                    if (!_deficitNotified.Contains(key))
+                    if (config.AutoAdjustBudget)
                     {
-                        ShowHUD(
-                            $"Your {sampleTag.DisplayName} supply has dropped below your Lunch Pail budget.",
-                            isError: false);
-                        _deficitNotified.Add(key);
-                        _monitor.Log(
-                            $"[LunchPail] Deficit alert fired: {sampleTag.DisplayName} stack={actualStack} totalRemainingBudget={totalRemaining}.",
-                            LogLevel.Trace);
+                        // Distribute shortage: health absorbs 50% (floor), stamina absorbs the rest
+                        // (stamina naturally takes the extra 1 on odd shortages — health is protected).
+                        int shortage         = totalRemaining - actualStack;
+                        int healthReduction  = shortage / 2;
+                        int staminaReduction = shortage - healthReduction;
+
+                        ApplyBudgetReduction(healthTags,  healthReduction);
+                        ApplyBudgetReduction(staminaTags, staminaReduction);
+
+                        // Fire HUD once per occurrence; re-arms on next day (ResetSession clears the set).
+                        if (!_deficitNotified.Contains(key))
+                        {
+                            ShowHUD(
+                                $"Your {sampleTag.DisplayName} Lunch Pail budget has been adjusted to match your available supply.",
+                                isError: false);
+                            _deficitNotified.Add(key);
+                            _monitor.Log(
+                                $"[LunchPail] Auto-adjusted budget: {sampleTag.DisplayName} shortage={shortage} (healthReduction={healthReduction}, staminaReduction={staminaReduction}).",
+                                LogLevel.Trace);
+                        }
+                    }
+                    else
+                    {
+                        // Alert-only: HUD fires once; UI will highlight the row red via IsInDeficit().
+                        if (!_deficitNotified.Contains(key))
+                        {
+                            ShowHUD(
+                                $"Your {sampleTag.DisplayName} supply has dropped below your Lunch Pail budget.",
+                                isError: false);
+                            _deficitNotified.Add(key);
+                            _monitor.Log(
+                                $"[LunchPail] Deficit alert fired: {sampleTag.DisplayName} stack={actualStack} totalRemainingBudget={totalRemaining}.",
+                                LogLevel.Trace);
+                        }
                     }
                 }
                 else
@@ -333,6 +387,24 @@ namespace TBoneHunter.LunchPail
                             $"[LunchPail][Deficit] {sampleTag.DisplayName} key={key}: deficit cleared (stack={actualStack} >= totalRemaining={totalRemaining}).",
                             LogLevel.Trace);
                 }
+            }
+        }
+
+        /// <summary>
+        /// Reduces MaxServings on the given tags by the specified total amount,
+        /// consuming from each tag sequentially and clamping to consumed-today
+        /// so the budget never drops below what has already been auto-eaten.
+        /// </summary>
+        private void ApplyBudgetReduction(List<LunchPailData.FoodTag> tags, int reduction)
+        {
+            foreach (var tag in tags)
+            {
+                if (reduction <= 0) break;
+                int consumed         = _consumedToday.GetValueOrDefault(GetTagKey(tag));
+                int currentRemaining = tag.MaxServings - consumed;
+                int canReduce        = Math.Max(0, Math.Min(currentRemaining, reduction));
+                tag.MaxServings     -= canReduce;
+                reduction           -= canReduce;
             }
         }
 

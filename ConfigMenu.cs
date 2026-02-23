@@ -119,6 +119,28 @@ namespace TBoneHunter.LunchPail
             );
 
             // ----------------------------------------------------------------
+            // Budget Adjustment section
+            // ----------------------------------------------------------------
+
+            gmcm.AddSectionTitle(
+                mod: manifest,
+                text: () => "Budget Adjustment"
+            );
+
+            gmcm.AddBoolOption(
+                mod: manifest,
+                name: () => "Auto-adjust daily budget when inventory drops below budgeted amount",
+                tooltip: () =>
+                    "When enabled, the serving budget for each assigned food is automatically\n" +
+                    "reduced to match your actual inventory if supply has dropped mid-day.\n" +
+                    "A HUD message will confirm the adjustment was made.\n\n" +
+                    "When disabled, only a HUD alert fires and deficit rows are highlighted\n" +
+                    "in red inside the Lunch Pail UI so you can adjust manually.",
+                getValue: () => getConfig().AutoAdjustBudget,
+                setValue: val => getConfig().AutoAdjustBudget = val
+            );
+
+            // ----------------------------------------------------------------
             // Controls section
             // ----------------------------------------------------------------
 
