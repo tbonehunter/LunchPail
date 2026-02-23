@@ -178,7 +178,8 @@ namespace TBoneHunter.LunchPail
 
             if (_config.OpenLunchPailKey.JustPressed())
             {
-                Game1.activeClickableMenu = new LunchPailUI(Monitor, _data, () => _config);
+                Game1.activeClickableMenu = new LunchPailUI(
+                    Monitor, _data, () => _config, _consumptionManager);
             }
         }
 

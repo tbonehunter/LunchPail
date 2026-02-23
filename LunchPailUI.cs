@@ -44,6 +44,7 @@ namespace TBoneHunter.LunchPail
         private readonly IMonitor _monitor;
         private readonly LunchPailData _data;
         private readonly Func<Config> _config;
+        private readonly ConsumptionManager _consumptionManager;
 
         private List<SObject> _unassignedFoods = new();
         private List<SObject> _staminaFoods = new();
@@ -61,7 +62,8 @@ namespace TBoneHunter.LunchPail
         // Constructor
         // ----------------------------------------------------------------
 
-        public LunchPailUI(IMonitor monitor, LunchPailData data, Func<Config> config)
+        public LunchPailUI(IMonitor monitor, LunchPailData data, Func<Config> config,
+            ConsumptionManager consumptionManager)
             : base(
                 x: (Game1.uiViewport.Width - TotalWidth) / 2,
                 y: (Game1.uiViewport.Height - TotalHeight) / 2,
@@ -72,6 +74,7 @@ namespace TBoneHunter.LunchPail
             _monitor = monitor;
             _data = data;
             _config = config;
+            _consumptionManager = consumptionManager;
 
             RefreshLists();
         }
@@ -436,15 +439,22 @@ namespace TBoneHunter.LunchPail
                     StackDrawType.Hide,
                     Color.White, false);
 
+                // Check whether actual inventory has fallen below the remaining daily budget.
+                int consumed    = _consumptionManager.GetConsumedToday(tag);
+                int budgetLeft  = tag.MaxServings == int.MaxValue ? int.MaxValue : tag.MaxServings - consumed;
+                bool inDeficit  = tag.MaxServings != int.MaxValue && item.Stack < budgetLeft;
+
                 // Show the serving budget alongside the name when a specific limit is set.
+                // Draw in red when the real stack is below the remaining budget.
                 string label = tag.MaxServings == int.MaxValue
                     ? item.DisplayName
                     : $"{item.DisplayName} (×{tag.MaxServings})";
+                Color labelColor = inDeficit ? Color.Red : Color.White;
 
                 Utility.drawTextWithShadow(b, label,
                     Game1.smallFont,
                     new Vector2(panel.X + Padding + ItemIconSize + 4, itemY + 8),
-                    Color.White);
+                    labelColor);
             }
         }
 

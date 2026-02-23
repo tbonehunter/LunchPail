@@ -258,6 +258,14 @@ namespace TBoneHunter.LunchPail
         }
 
         /// <summary>
+        /// Returns how many times the given tag has been auto-consumed today.
+        /// Used by LunchPailUI to flag rows where actual inventory has fallen
+        /// below the remaining daily budget.
+        /// </summary>
+        public int GetConsumedToday(LunchPailData.FoodTag tag) =>
+            _consumedToday.GetValueOrDefault(GetTagKey(tag));
+
+        /// <summary>
         /// Returns a stable string key for a FoodTag, used to key the consumed-today dictionary.
         /// </summary>
         private static string GetTagKey(LunchPailData.FoodTag tag) =>
@@ -278,28 +286,49 @@ namespace TBoneHunter.LunchPail
         {
             foreach (var tag in compartment)
             {
-                // Unlimited tags have no budget to fall below.
-                if (tag.MaxServings == int.MaxValue) continue;
-
                 var key = GetTagKey(tag);
-                if (_deficitNotified.Contains(key)) continue;
+
+                // Unlimited tags have no budget to fall below.
+                if (tag.MaxServings == int.MaxValue)
+                {
+                    _monitor.Log($"[LunchPail][Deficit] {tag.DisplayName} key={key}: MaxServings=unlimited, skipping.", LogLevel.Trace);
+                    continue;
+                }
 
                 int consumed  = _consumedToday.GetValueOrDefault(key);
                 int remaining = tag.MaxServings - consumed;
-                if (remaining <= 0) continue; // budget already used up, not a deficit
 
-                var item       = FoodHelper.FindTaggedItemInInventory(player, tag);
+                if (remaining <= 0)
+                {
+                    _monitor.Log($"[LunchPail][Deficit] {tag.DisplayName} key={key}: budget exhausted (consumed={consumed} MaxServings={tag.MaxServings}), skipping.", LogLevel.Trace);
+                    // Budget fully used — clear any deficit flag so it can re-arm next time.
+                    _deficitNotified.Remove(key);
+                    continue;
+                }
+
+                var item        = FoodHelper.FindTaggedItemInInventory(player, tag);
                 int actualStack = item?.Stack ?? 0;
+
+                _monitor.Log($"[LunchPail][Deficit] {tag.DisplayName} key={key}: MaxServings={tag.MaxServings} consumed={consumed} remaining={remaining} actualStack={actualStack} deficit={actualStack < remaining}.", LogLevel.Trace);
 
                 if (actualStack < remaining)
                 {
-                    ShowHUD(
-                        $"Your {tag.DisplayName} supply has dropped below your Lunch Pail budget.",
-                        isError: false);
-                    _deficitNotified.Add(key);
-                    _monitor.Log(
-                        $"[LunchPail] Deficit alert: {tag.DisplayName} stack={actualStack} remaining budget={remaining}.",
-                        LogLevel.Trace);
+                    if (!_deficitNotified.Contains(key))
+                    {
+                        ShowHUD(
+                            $"Your {tag.DisplayName} supply has dropped below your Lunch Pail budget.",
+                            isError: false);
+                        _deficitNotified.Add(key);
+                        _monitor.Log(
+                            $"[LunchPail] Deficit alert fired: {tag.DisplayName} stack={actualStack} remaining budget={remaining}.",
+                            LogLevel.Trace);
+                    }
+                }
+                else
+                {
+                    // Deficit resolved (stack recovered) — clear flag so another drop will re-alert.
+                    if (_deficitNotified.Remove(key))
+                        _monitor.Log($"[LunchPail][Deficit] {tag.DisplayName} key={key}: deficit cleared (stack={actualStack} >= remaining={remaining}).", LogLevel.Trace);
                 }
             }
         }
