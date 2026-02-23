@@ -6,7 +6,6 @@
     <TargetFramework>net6.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <OutputPath>..\..\Mods\LunchPail</OutputPath>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
 
@@ -14,6 +13,7 @@
     <None Remove=".gitattributes" />
     <None Remove=".gitignore" />
     <None Remove="LunchPail.zip" />
+    <None Remove="LunchPail_large.png" />
   </ItemGroup>
 
   <ItemGroup>
