@@ -171,4 +171,4 @@ During startup, Expanded Starter Package (and possibly other mods) fire inventor
 
 Add `if (!Context.IsWorldReady) return;` as the first line of `OnInventoryChanged`, before the `HasLunchPail` early-exit check. This is a one-line addition consistent with every other event handler in the file. It does not change behavior during normal gameplay; it only prevents the handler from acting during the startup/loading phase.
 
-**Status:** Identified and agreed upon. Implementation pending.
+**Status:** Implemented. `if (!Context.IsWorldReady) return;` added as first line of `OnInventoryChanged` in `ModEntry.cs`.

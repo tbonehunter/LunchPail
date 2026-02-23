@@ -202,6 +202,7 @@ namespace TBoneHunter.LunchPail
 
         private void OnInventoryChanged(object? sender, InventoryChangedEventArgs e)
         {
+            if (!Context.IsWorldReady) return;
             if (_data.HasLunchPail) return;
 
             // Watch for the item being added (crafted or given).
