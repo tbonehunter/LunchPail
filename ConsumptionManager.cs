@@ -25,6 +25,10 @@ namespace TBoneHunter.LunchPail
         private readonly Func<Config> _config;
         private readonly Func<LunchPailData> _data;
 
+        // Per-day consumption counters keyed by "ItemId_Quality".
+        // Incremented on each auto-consume; cleared each morning by ResetSession.
+        private readonly Dictionary<string, int> _consumedToday = new();
+
         // Notification flags — each fires once per day (reset by ResetSession).
         private bool _staminaLowNotified       = false;
         private bool _staminaExhaustedNotified = false;
@@ -61,6 +65,8 @@ namespace TBoneHunter.LunchPail
         /// </summary>
         public void ResetSession()
         {
+            _consumedToday.Clear();
+
             _staminaLowNotified       = false;
             _staminaExhaustedNotified = false;
             _healthLowNotified        = false;
@@ -102,6 +108,7 @@ namespace TBoneHunter.LunchPail
                 if (FoodHelper.ShouldTriggerStamina(next, player, config.StaminaOffset))
                 {
                     FoodHelper.SilentConsume(next, player);
+                    RecordConsumptionByItem(next, data.StaminaCompartment);
                     _monitor.Log($"[LunchPail] Auto-consumed {next.DisplayName} for stamina.", LogLevel.Trace);
 
                     // Warn once if stamina supply is now low
@@ -140,6 +147,7 @@ namespace TBoneHunter.LunchPail
             }
 
             FoodHelper.SilentConsume(fallbackNext, player);
+            RecordConsumptionByItem(fallbackNext, data.HealthCompartment);
             _monitor.Log($"[LunchPail] Fallback stamina consume: {fallbackNext.DisplayName}.", LogLevel.Trace);
 
             // Warn once if the fallback compartment is also running low
@@ -165,6 +173,7 @@ namespace TBoneHunter.LunchPail
                 if (FoodHelper.ShouldTriggerHealth(next, player, config.HealthOffset))
                 {
                     FoodHelper.SilentConsume(next, player);
+                    RecordConsumptionByItem(next, data.HealthCompartment);
                     _monitor.Log($"[LunchPail] Auto-consumed {next.DisplayName} for health.", LogLevel.Trace);
 
                     // Warn once if health supply is now low
@@ -203,6 +212,7 @@ namespace TBoneHunter.LunchPail
             }
 
             FoodHelper.SilentConsume(fallbackNext, player);
+            RecordConsumptionByItem(fallbackNext, data.StaminaCompartment);
             _monitor.Log($"[LunchPail] Fallback health consume: {fallbackNext.DisplayName}.", LogLevel.Trace);
 
             // Warn once if the fallback compartment is also running low
@@ -231,11 +241,44 @@ namespace TBoneHunter.LunchPail
             var found = new List<SObject>();
             foreach (var tag in tags)
             {
+                // Skip this tag if today's consumption budget has been reached.
+                if (IsBudgetExhausted(tag)) continue;
+
                 var item = FoodHelper.FindTaggedItemInInventory(player, tag);
                 if (item != null && FoodHelper.IsEdible(item))
                     found.Add(item);
             }
             return FoodHelper.SortFoods(found, config.SortOrder, byStamina);
+        }
+
+        /// <summary>
+        /// Returns a stable string key for a FoodTag, used to key the consumed-today dictionary.
+        /// </summary>
+        private static string GetTagKey(LunchPailData.FoodTag tag) =>
+            tag.ItemId + "_" + tag.Quality;
+
+        /// <summary>
+        /// Returns true if the tag's daily consumption budget is fully used.
+        /// Tags with MaxServings == int.MaxValue are never exhausted.
+        /// </summary>
+        private bool IsBudgetExhausted(LunchPailData.FoodTag tag)
+        {
+            if (tag.MaxServings == int.MaxValue) return false;
+            return _consumedToday.GetValueOrDefault(GetTagKey(tag)) >= tag.MaxServings;
+        }
+
+        /// <summary>
+        /// Finds the tag in <paramref name="compartment"/> matching <paramref name="item"/>
+        /// and increments its consumed-today counter.
+        /// </summary>
+        private void RecordConsumptionByItem(SObject item, List<LunchPailData.FoodTag> compartment)
+        {
+            var tag = compartment.FirstOrDefault(t =>
+                t.ItemId == item.QualifiedItemId && t.Quality == item.Quality);
+            if (tag == null || tag.MaxServings == int.MaxValue) return;
+
+            var key = GetTagKey(tag);
+            _consumedToday[key] = _consumedToday.GetValueOrDefault(key) + 1;
         }
 
         /// <summary>

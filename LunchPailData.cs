@@ -49,6 +49,13 @@ namespace TBoneHunter.LunchPail
             /// Display name cached for UI purposes.
             /// </summary>
             public string DisplayName { get; set; } = string.Empty;
+
+            /// <summary>
+            /// Maximum number of times the pail may auto-consume this item per day.
+            /// Defaults to int.MaxValue (unlimited) to preserve behaviour for existing saves.
+            /// Resets via ConsumptionManager.ResetSession each morning.
+            /// </summary>
+            public int MaxServings { get; set; } = int.MaxValue;
         }
     }
 }

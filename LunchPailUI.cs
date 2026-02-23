@@ -48,7 +48,9 @@ namespace TBoneHunter.LunchPail
 
         private List<SObject> _unassignedFoods = new();
         private List<SObject> _staminaFoods = new();
+        private List<LunchPailData.FoodTag> _staminaTags = new();
         private List<SObject> _healthFoods = new();
+        private List<LunchPailData.FoodTag> _healthTags = new();
 
         private string? _tooltipText = null;
 
@@ -79,17 +81,21 @@ namespace TBoneHunter.LunchPail
         {
             var player = Game1.player;
 
-            _staminaFoods = _data.StaminaCompartment
-                .Select(tag => FoodHelper.FindTaggedItemInInventory(player, tag))
-                .Where(obj => obj != null)
-                .Cast<SObject>()
+            // Build parallel (tag, SObject) pairs so the draw layer can access MaxServings
+            // for each resolved item without a second lookup.
+            var staminaPairs = _data.StaminaCompartment
+                .Select(tag => (tag, item: FoodHelper.FindTaggedItemInInventory(player, tag)))
+                .Where(p => p.item != null)
                 .ToList();
+            _staminaFoods = staminaPairs.Select(p => p.item!).ToList();
+            _staminaTags  = staminaPairs.Select(p => p.tag).ToList();
 
-            _healthFoods = _data.HealthCompartment
-                .Select(tag => FoodHelper.FindTaggedItemInInventory(player, tag))
-                .Where(obj => obj != null)
-                .Cast<SObject>()
+            var healthPairs = _data.HealthCompartment
+                .Select(tag => (tag, item: FoodHelper.FindTaggedItemInInventory(player, tag)))
+                .Where(p => p.item != null)
                 .ToList();
+            _healthFoods = healthPairs.Select(p => p.item!).ToList();
+            _healthTags  = healthPairs.Select(p => p.tag).ToList();
 
             var taggedKeys = _data.StaminaCompartment
                 .Concat(_data.HealthCompartment)
@@ -130,9 +136,9 @@ namespace TBoneHunter.LunchPail
             DrawPanel(b, healthPanel, Color.Crimson * 0.3f, "Health");
 
             // Item lists
-            DrawItemList(b, _staminaFoods, staminaPanel, showX: true);
+            DrawItemList(b, _staminaFoods, _staminaTags, staminaPanel, showX: true);
             DrawUnassignedList(b, _unassignedFoods, centerPanel);
-            DrawItemList(b, _healthFoods, healthPanel, showX: true);
+            DrawItemList(b, _healthFoods, _healthTags, healthPanel, showX: true);
 
             // Close button
             base.draw(b);
@@ -161,7 +167,7 @@ namespace TBoneHunter.LunchPail
                 return;
             }
 
-            // Stamina panel: X button to unassign
+            // Stamina panel: X button takes priority over item body click
             var staminaPanel = GetPanelBounds(0);
             int staminaXIndex = GetXButtonIndexAtPoint(x, y, staminaPanel, _staminaFoods.Count);
             if (staminaXIndex >= 0)
@@ -170,12 +176,28 @@ namespace TBoneHunter.LunchPail
                 return;
             }
 
-            // Health panel: X button to unassign
+            // Stamina panel: item body click — open adjust/unassign prompt
+            int staminaIndex = GetItemIndexAtPoint(x, y, staminaPanel, _staminaFoods.Count);
+            if (staminaIndex >= 0)
+            {
+                ShowEditPrompt(_staminaFoods[staminaIndex], _staminaTags[staminaIndex], isStamina: true);
+                return;
+            }
+
+            // Health panel: X button takes priority over item body click
             var healthPanel = GetPanelBounds(2);
             int healthXIndex = GetXButtonIndexAtPoint(x, y, healthPanel, _healthFoods.Count);
             if (healthXIndex >= 0)
             {
                 UnassignFood(_healthFoods[healthXIndex], isStamina: false);
+                return;
+            }
+
+            // Health panel: item body click — open adjust/unassign prompt
+            int healthIndex = GetItemIndexAtPoint(x, y, healthPanel, _healthFoods.Count);
+            if (healthIndex >= 0)
+            {
+                ShowEditPrompt(_healthFoods[healthIndex], _healthTags[healthIndex], isStamina: false);
             }
         }
 
@@ -205,20 +227,99 @@ namespace TBoneHunter.LunchPail
                 responses,
                 (Farmer _, string which) =>
                 {
-                    if (which == "stamina") AssignFood(food, isStamina: true);
-                    else if (which == "health") AssignFood(food, isStamina: false);
-                    Game1.activeClickableMenu = this;
-                    RefreshLists();
+                    if (which == "cancel")
+                    {
+                        Game1.activeClickableMenu = this;
+                        return;
+                    }
+                    ShowServingCountPrompt(food, isStamina: which == "stamina",
+                        isEdit: false, existingTag: null);
                 });
         }
 
-        private void AssignFood(SObject food, bool isStamina)
+        /// <summary>
+        /// Opens a NumberSelectionMenu so the player can choose how many servings
+        /// to budget for this item.  Used for both initial assignment and editing.
+        /// </summary>
+        private void ShowServingCountPrompt(
+            SObject food, bool isStamina, bool isEdit, LunchPailData.FoodTag? existingTag)
+        {
+            int currentStack = food.Stack;
+            // Pre-fill: for edits use the smaller of the saved budget and the current stack;
+            // for new assignments (or unlimited legacy tags) default to the full current stack.
+            int defaultValue = (isEdit && existingTag != null)
+                ? Math.Min(
+                    existingTag.MaxServings == int.MaxValue ? currentStack : existingTag.MaxServings,
+                    currentStack)
+                : currentStack;
+
+            Game1.activeClickableMenu = new NumberSelectionMenu(
+                $"How many {food.DisplayName} for your Lunch Pail today?",
+                (number, price, who) =>
+                {
+                    if (isEdit && existingTag != null)
+                    {
+                        existingTag.MaxServings = number;
+                        _monitor.Log(
+                            $"[LunchPail] Adjusted {food.DisplayName} serving budget to {number}.",
+                            LogLevel.Trace);
+                    }
+                    else
+                    {
+                        AssignFood(food, isStamina, maxServings: number);
+                    }
+                    Game1.activeClickableMenu = this;
+                    RefreshLists();
+                },
+                price: -1,
+                minValue: 1,
+                maxValue: currentStack,
+                defaultNumber: defaultValue);
+        }
+
+        /// <summary>
+        /// Opens a contextual dialogue for an already-assigned item, letting the
+        /// player adjust the serving budget or unassign the item entirely.
+        /// </summary>
+        private void ShowEditPrompt(SObject food, LunchPailData.FoodTag tag, bool isStamina)
+        {
+            var responses = new Response[]
+            {
+                new Response("adjust",   "Adjust serving amount"),
+                new Response("unassign", "Unassign"),
+                new Response("cancel",   "Cancel")
+            };
+
+            string compartment = isStamina ? "Stamina" : "Health";
+            Game1.currentLocation.createQuestionDialogue(
+                $"{food.DisplayName} is assigned to the {compartment} compartment.",
+                responses,
+                (Farmer _, string which) =>
+                {
+                    if (which == "adjust")
+                    {
+                        ShowServingCountPrompt(food, isStamina, isEdit: true, existingTag: tag);
+                    }
+                    else if (which == "unassign")
+                    {
+                        UnassignFood(food, isStamina);
+                        Game1.activeClickableMenu = this;
+                    }
+                    else
+                    {
+                        Game1.activeClickableMenu = this;
+                    }
+                });
+        }
+
+        private void AssignFood(SObject food, bool isStamina, int maxServings = int.MaxValue)
         {
             var tag = new LunchPailData.FoodTag
             {
                 ItemId = food.QualifiedItemId,
                 Quality = food.Quality,
-                DisplayName = food.DisplayName
+                DisplayName = food.DisplayName,
+                MaxServings = maxServings
             };
 
             if (isStamina)
@@ -267,11 +368,17 @@ namespace TBoneHunter.LunchPail
                 Color.White);
         }
 
-        private void DrawItemList(SpriteBatch b, List<SObject> items, Rectangle panel, bool showX)
+        /// <param name="tags">
+        /// Parallel tag list matching <paramref name="items"/>; used to render the serving budget.
+        /// </param>
+        private void DrawItemList(
+            SpriteBatch b, List<SObject> items, List<LunchPailData.FoodTag> tags,
+            Rectangle panel, bool showX)
         {
             for (int i = 0; i < items.Count; i++)
             {
                 var item = items[i];
+                var tag  = tags[i];
                 int itemY = panel.Y + 40 + i * ItemHeight;
 
                 item.drawInMenu(b,
@@ -280,7 +387,12 @@ namespace TBoneHunter.LunchPail
                     StackDrawType.Draw,
                     Color.White, false);
 
-                Utility.drawTextWithShadow(b, item.DisplayName,
+                // Show the serving budget alongside the name when a specific limit is set.
+                string label = tag.MaxServings == int.MaxValue
+                    ? item.DisplayName
+                    : $"{item.DisplayName} (×{tag.MaxServings})";
+
+                Utility.drawTextWithShadow(b, label,
                     Game1.smallFont,
                     new Vector2(panel.X + Padding + ItemIconSize + 4, itemY + 8),
                     Color.White);
