@@ -28,7 +28,7 @@ namespace TBoneHunter.LunchPail
         // Layout constants
         // ----------------------------------------------------------------
 
-        private const int PanelWidth = 200;
+        private const int PanelWidth = 260; // widened 30% for label legibility
         private const int PanelHeight = 400;
         private const int ItemHeight = 48;
         private const int ItemIconSize = 32;
@@ -97,15 +97,17 @@ namespace TBoneHunter.LunchPail
             _healthFoods = healthPairs.Select(p => p.item!).ToList();
             _healthTags  = healthPairs.Select(p => p.tag).ToList();
 
-            var taggedKeys = _data.StaminaCompartment
-                .Concat(_data.HealthCompartment)
-                .Select(t => t.ItemId + "_" + t.Quality)
-                .ToHashSet();
-
+            // An item only leaves the center panel when every serving in the stack is
+            // already budgeted across both compartments combined.
             _unassignedFoods = player.Items
                 .OfType<SObject>()
-                .Where(obj => FoodHelper.IsEdible(obj)
-                    && !taggedKeys.Contains(obj.QualifiedItemId + "_" + obj.Quality))
+                .Where(obj =>
+                {
+                    if (!FoodHelper.IsEdible(obj)) return false;
+                    int staminaBudget = GetCompartmentBudget(obj, _data.StaminaCompartment);
+                    int healthBudget  = GetCompartmentBudget(obj, _data.HealthCompartment);
+                    return staminaBudget + healthBudget < obj.Stack;
+                })
                 .ToList();
         }
 
@@ -215,16 +217,21 @@ namespace TBoneHunter.LunchPail
 
         private void ShowAssignmentPrompt(SObject food)
         {
-            var responses = new Response[]
-            {
-                new Response("stamina", "Add to Stamina compartment"),
-                new Response("health",  "Add to Health compartment"),
-                new Response("cancel",  "Cancel")
-            };
+            int staminaBudget = GetCompartmentBudget(food, _data.StaminaCompartment);
+            int healthBudget  = GetCompartmentBudget(food, _data.HealthCompartment);
+
+            // Only offer compartments that don't already own a tag for this item.
+            bool canStamina = staminaBudget == 0;
+            bool canHealth  = healthBudget  == 0;
+
+            var responseList = new List<Response>();
+            if (canStamina) responseList.Add(new Response("stamina", "Add to Stamina compartment"));
+            if (canHealth)  responseList.Add(new Response("health",  "Add to Health compartment"));
+            responseList.Add(new Response("cancel", "Cancel"));
 
             Game1.currentLocation.createQuestionDialogue(
                 $"Assign {food.DisplayName} to which compartment?",
-                responses,
+                responseList.ToArray(),
                 (Farmer _, string which) =>
                 {
                     if (which == "cancel")
@@ -232,8 +239,10 @@ namespace TBoneHunter.LunchPail
                         Game1.activeClickableMenu = this;
                         return;
                     }
-                    ShowServingCountPrompt(food, isStamina: which == "stamina",
-                        isEdit: false, existingTag: null);
+                    bool toStamina    = which == "stamina";
+                    int otherBudget   = toStamina ? healthBudget : staminaBudget;
+                    ShowServingCountPrompt(food, isStamina: toStamina,
+                        isEdit: false, existingTag: null, alreadyBudgeted: otherBudget);
                 });
         }
 
@@ -241,17 +250,25 @@ namespace TBoneHunter.LunchPail
         /// Opens a NumberSelectionMenu so the player can choose how many servings
         /// to budget for this item.  Used for both initial assignment and editing.
         /// </summary>
+        /// <param name="alreadyBudgeted">
+        /// Servings already claimed by the *other* compartment for this item.
+        /// The max offered to the player is (stack - alreadyBudgeted).
+        /// </param>
         private void ShowServingCountPrompt(
-            SObject food, bool isStamina, bool isEdit, LunchPailData.FoodTag? existingTag)
+            SObject food, bool isStamina, bool isEdit, LunchPailData.FoodTag? existingTag,
+            int alreadyBudgeted = 0)
         {
             int currentStack = food.Stack;
-            // Pre-fill: for edits use the smaller of the saved budget and the current stack;
-            // for new assignments (or unlimited legacy tags) default to the full current stack.
+            // Available headroom = stack minus what the other compartment already claimed.
+            int available = Math.Max(1, currentStack - alreadyBudgeted);
+
+            // Pre-fill: for edits use the smaller of the saved budget and available headroom;
+            // for new assignments (or unlimited legacy tags) default to all available headroom.
             int defaultValue = (isEdit && existingTag != null)
                 ? Math.Min(
-                    existingTag.MaxServings == int.MaxValue ? currentStack : existingTag.MaxServings,
-                    currentStack)
-                : currentStack;
+                    existingTag.MaxServings == int.MaxValue ? available : existingTag.MaxServings,
+                    available)
+                : available;
 
             Game1.activeClickableMenu = new NumberSelectionMenu(
                 $"How many {food.DisplayName} for your Lunch Pail today?",
@@ -273,7 +290,7 @@ namespace TBoneHunter.LunchPail
                 },
                 price: -1,
                 minValue: 1,
-                maxValue: currentStack,
+                maxValue: available,
                 defaultNumber: defaultValue);
         }
 
@@ -298,7 +315,11 @@ namespace TBoneHunter.LunchPail
                 {
                     if (which == "adjust")
                     {
-                        ShowServingCountPrompt(food, isStamina, isEdit: true, existingTag: tag);
+                        // Max for this tag = stack minus what the OTHER compartment has claimed.
+                        var otherCompartment = isStamina ? _data.HealthCompartment : _data.StaminaCompartment;
+                        int otherBudget = GetCompartmentBudget(food, otherCompartment);
+                        ShowServingCountPrompt(food, isStamina, isEdit: true, existingTag: tag,
+                            alreadyBudgeted: otherBudget);
                     }
                     else if (which == "unassign")
                     {
@@ -330,6 +351,23 @@ namespace TBoneHunter.LunchPail
             _monitor.Log(
                 $"[LunchPail] Assigned {food.DisplayName} to {(isStamina ? "stamina" : "health")} compartment.",
                 LogLevel.Trace);
+        }
+
+        /// <summary>
+        /// Returns the number of servings of <paramref name="food"/> already budgeted
+        /// in <paramref name="compartment"/>. An unlimited tag (MaxServings == int.MaxValue)
+        /// is treated as claiming the entire stack, so nothing is left for the other side.
+        /// Returns 0 when no tag exists for this item.
+        /// </summary>
+        private static int GetCompartmentBudget(
+            SObject food, List<LunchPailData.FoodTag> compartment)
+        {
+            var tag = compartment.FirstOrDefault(t =>
+                t.ItemId == food.QualifiedItemId && t.Quality == food.Quality);
+            if (tag == null) return 0;
+            return tag.MaxServings == int.MaxValue
+                ? food.Stack
+                : Math.Min(tag.MaxServings, food.Stack);
         }
 
         private void UnassignFood(SObject food, bool isStamina)
