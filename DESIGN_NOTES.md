@@ -100,3 +100,38 @@ Repo is on `master`, fully clean. A feature branch will be created before any im
 ## Next Step
 
 Create feature branch (e.g., `feature/maxservings-partial-stack`) and begin implementation per the plan above.
+
+---
+
+## Implementation Session — February 23, 2026
+
+### Decisions Finalized Before Coding
+
+**Quantity input method**
+`NumberSelectionMenu` (Stardew's native stack-split widget) was chosen. It supports both slider and keyboard input, accepts a min/max range, and requires no custom UI work. The slider concern (imprecision on touch) was noted but the widget also accepts typed numbers, making it suitable for all input methods.
+
+**Upper bound for serving count**
+Capped at the item's **current inventory stack size**, not 999. Rationale: allowing a number larger than what the player holds leads to a silent failure mode — the budget counter never triggers the low-supply warning even when actual inventory hits zero. Tying the max to the real stack prevents that class of confusion.
+
+**MaxServings reset cadence**
+Per-day cap, cleared each morning via `ResetSession`. Aligns with the "pack your lunch daily" mental model that matches expected player behavior.
+
+**Row display**
+A single number is sufficient: the item name is shown as `Name (×N)` when a budget is set. Showing the live inventory count alongside the budget was explicitly rejected — the player can check their inventory directly, and it would add visual noise without meaningful benefit. Items with `MaxServings == int.MaxValue` (unlimited / legacy) render identically to before.
+
+**Edit flow pre-fill**
+When a player opens the quantity selector on an already-assigned item, the default value is `min(MaxServings, currentStack)`. This keeps the selector internally consistent (the default never exceeds the max) and quietly adjusts when stock has shrunk since the budget was last set. Legacy unlimited tags pre-fill at the current stack count.
+
+**Deficit detection (inventory drops below budget mid-day)**
+The mod is not blind to live inventory — `ConsumptionManager` already reads `item.Stack` every tick. A deficit alert (fires when the real stack falls below the remaining daily budget) was discussed and determined to be technically straightforward. Decision: **deferred to a separate feature** to keep this feature's scope focused. Will revisit after gameplay testing.
+
+### Implementation Summary
+
+Branch: `feature/maxservings-partial-stack`  
+Commit: `1fdbc11`
+
+| File | Changes |
+|------|---------|
+| `LunchPailData.cs` | `MaxServings` (int, default `int.MaxValue`) added to `FoodTag` |
+| `ConsumptionManager.cs` | `_consumedToday` dictionary; `IsBudgetExhausted`; `RecordConsumptionByItem`; `ResetSession` clears dictionary |
+| `LunchPailUI.cs` | Serving count prompt after compartment selection; edit/unassign prompt on assigned-item click (Path 2); `(×N)` budget label on assigned rows; parallel `_staminaTags`/`_healthTags` lists |
