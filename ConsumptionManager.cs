@@ -272,45 +272,56 @@ namespace TBoneHunter.LunchPail
             tag.ItemId + "_" + tag.Quality;
 
         /// <summary>
-        /// Checks all tagged items across both compartments and fires a one-time-per-day
-        /// HUD alert for any whose real inventory stack has fallen below the remaining
-        /// daily budget (i.e. the player removed items mid-day that the pail was counting on).
+        /// Checks all tagged items across both compartments and fires a one-time-per-occurrence
+        /// HUD alert for any whose real inventory stack has fallen below the COMBINED remaining
+        /// daily budget across both compartments (e.g. Salad assigned 5 to stamina + 5 to health
+        /// requires 10 in inventory; 9 salads would trigger a deficit alert).
         /// </summary>
         private void CheckDeficits(Farmer player, LunchPailData data)
         {
-            CheckCompartmentDeficits(player, data.StaminaCompartment);
-            CheckCompartmentDeficits(player, data.HealthCompartment);
-        }
+            // Collect all finite-budget tags from both compartments and sum remaining
+            // budget per unique item key so cross-compartment assignments are totalled.
+            var totalRemainingByKey = new Dictionary<string, (int totalRemaining, LunchPailData.FoodTag sampleTag)>();
 
-        private void CheckCompartmentDeficits(Farmer player, List<LunchPailData.FoodTag> compartment)
-        {
-            foreach (var tag in compartment)
+            foreach (var tag in data.StaminaCompartment.Concat(data.HealthCompartment))
             {
-                // Unlimited tags have no budget to fall below.
                 if (tag.MaxServings == int.MaxValue) continue;
 
-                var key = GetTagKey(tag);
-
+                var key      = GetTagKey(tag);
                 int consumed  = _consumedToday.GetValueOrDefault(key);
                 int remaining = tag.MaxServings - consumed;
-                if (remaining <= 0) continue; // budget already used up, not a deficit
+                if (remaining <= 0) continue;
 
-                var item        = FoodHelper.FindTaggedItemInInventory(player, tag);
+                if (totalRemainingByKey.TryGetValue(key, out var existing))
+                    totalRemainingByKey[key] = (existing.totalRemaining + remaining, existing.sampleTag);
+                else
+                    totalRemainingByKey[key] = (remaining, tag);
+            }
+
+            foreach (var kvp in totalRemainingByKey)
+            {
+                var key            = kvp.Key;
+                int totalRemaining = kvp.Value.totalRemaining;
+                var sampleTag      = kvp.Value.sampleTag;
+
+                var item        = FoodHelper.FindTaggedItemInInventory(player, sampleTag);
                 int actualStack = item?.Stack ?? 0;
 
-                _monitor.Log($"[LunchPail][Deficit] {tag.DisplayName} key={key}: MaxServings={tag.MaxServings} consumed={consumed} remaining={remaining} actualStack={actualStack} deficit={actualStack < remaining}.", LogLevel.Trace);
+                _monitor.Log(
+                    $"[LunchPail][Deficit] {sampleTag.DisplayName} key={key}: totalRemaining={totalRemaining} actualStack={actualStack} deficit={actualStack < totalRemaining}.",
+                    LogLevel.Trace);
 
-                if (actualStack < remaining)
+                if (actualStack < totalRemaining)
                 {
                     // Fire alert once per occurrence; re-arms when deficit clears.
                     if (!_deficitNotified.Contains(key))
                     {
                         ShowHUD(
-                            $"Your {tag.DisplayName} supply has dropped below your Lunch Pail budget.",
+                            $"Your {sampleTag.DisplayName} supply has dropped below your Lunch Pail budget.",
                             isError: false);
                         _deficitNotified.Add(key);
                         _monitor.Log(
-                            $"[LunchPail] Deficit alert fired: {tag.DisplayName} stack={actualStack} remaining budget={remaining}.",
+                            $"[LunchPail] Deficit alert fired: {sampleTag.DisplayName} stack={actualStack} totalRemainingBudget={totalRemaining}.",
                             LogLevel.Trace);
                     }
                 }
@@ -318,7 +329,9 @@ namespace TBoneHunter.LunchPail
                 {
                     // Deficit resolved — clear flag so next drop fires a fresh alert.
                     if (_deficitNotified.Remove(key))
-                        _monitor.Log($"[LunchPail][Deficit] {tag.DisplayName} key={key}: deficit cleared (stack={actualStack} >= remaining={remaining}).", LogLevel.Trace);
+                        _monitor.Log(
+                            $"[LunchPail][Deficit] {sampleTag.DisplayName} key={key}: deficit cleared (stack={actualStack} >= totalRemaining={totalRemaining}).",
+                            LogLevel.Trace);
                 }
             }
         }
