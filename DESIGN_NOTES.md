@@ -135,3 +135,40 @@ Commit: `1fdbc11`
 | `LunchPailData.cs` | `MaxServings` (int, default `int.MaxValue`) added to `FoodTag` |
 | `ConsumptionManager.cs` | `_consumedToday` dictionary; `IsBudgetExhausted`; `RecordConsumptionByItem`; `ResetSession` clears dictionary |
 | `LunchPailUI.cs` | Serving count prompt after compartment selection; edit/unassign prompt on assigned-item click (Path 2); `(×N)` budget label on assigned rows; parallel `_staminaTags`/`_healthTags` lists |
+
+---
+
+## Bug Investigation — `HasLunchPail=True` on New Game / Mining Level 0 — February 23, 2026
+
+### Reported Symptom
+
+After rebuilding v1.1.0, starting a brand new game (Mining Level 0, no save history) resulted in the Lunch Pail being immediately active on the first morning. The log showed `HasLunchPail=True` being read from save data even though no crafting had ever taken place. This behavior was NOT present in v1.0.0.
+
+### Testing Methodology (Four Tests)
+
+The player ran four controlled tests and captured log output in `Lunch Pail Test.txt`:
+
+| Test | Version | Scenario | Result |
+|------|---------|----------|--------|
+| 1 | 1.0.0 | New game | `HasLunchPail=False` — correct |
+| 2 | 1.1.0 | New game | First load: `False`; subsequent same-session load: `True` — **bug** |
+| 3 | 1.1.0 | Load of saved new game (no pail crafted) | First load: `False`; subsequent same-session load: `True` — **bug** |
+| 4 | 1.1.0 | Load of the save that first exhibited the bug | `HasLunchPail=True` — **bug persisted across saves** |
+
+Key observation: in v1.1.0, `OnDayEnding` fires during the startup/loading sequence — a new behavior introduced this session. This appears before the first `SaveLoaded`, indicating the engine is triggering end-of-day cleanup as part of the new-day transition during startup.
+
+### Player's Stated Resolution Goal
+
+The player specified the correct conceptual fix: the mod should check whether the Lunch Pail has been crafted in this save; if yes, `HasLunchPail=True`; if no, check Mining Level to determine whether the recipe should be available in the crafting menu. The pail must never self-activate without a crafting event.
+
+### Root Cause Analysis
+
+The `OnInventoryChanged` event handler in `ModEntry.cs` was the sole event handler **missing** the `if (!Context.IsWorldReady) return;` guard that all other handlers carry. Every other handler — `OnUpdateTicked`, `OnButtonPressed` — correctly refuses to act during the game's startup/loading sequence.
+
+During startup, Expanded Starter Package (and possibly other mods) fire inventory-change events while injecting items into the starter chest. Because `OnInventoryChanged` had no world-ready guard, it ran during this phase, matched the unlock item condition, called `ActivateLunchPail()`, and wrote `HasLunchPail=True` to save data — before the world was in a playable state. The second `SaveLoaded` within the same session then read that incorrectly written `True`.
+
+### Proposed Fix
+
+Add `if (!Context.IsWorldReady) return;` as the first line of `OnInventoryChanged`, before the `HasLunchPail` early-exit check. This is a one-line addition consistent with every other event handler in the file. It does not change behavior during normal gameplay; it only prevents the handler from acting during the startup/loading phase.
+
+**Status:** Identified and agreed upon. Implementation pending.
