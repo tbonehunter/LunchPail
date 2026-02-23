@@ -286,25 +286,14 @@ namespace TBoneHunter.LunchPail
         {
             foreach (var tag in compartment)
             {
-                var key = GetTagKey(tag);
-
                 // Unlimited tags have no budget to fall below.
-                if (tag.MaxServings == int.MaxValue)
-                {
-                    _monitor.Log($"[LunchPail][Deficit] {tag.DisplayName} key={key}: MaxServings=unlimited, skipping.", LogLevel.Trace);
-                    continue;
-                }
+                if (tag.MaxServings == int.MaxValue) continue;
+
+                var key = GetTagKey(tag);
 
                 int consumed  = _consumedToday.GetValueOrDefault(key);
                 int remaining = tag.MaxServings - consumed;
-
-                if (remaining <= 0)
-                {
-                    _monitor.Log($"[LunchPail][Deficit] {tag.DisplayName} key={key}: budget exhausted (consumed={consumed} MaxServings={tag.MaxServings}), skipping.", LogLevel.Trace);
-                    // Budget fully used — clear any deficit flag so it can re-arm next time.
-                    _deficitNotified.Remove(key);
-                    continue;
-                }
+                if (remaining <= 0) continue; // budget already used up, not a deficit
 
                 var item        = FoodHelper.FindTaggedItemInInventory(player, tag);
                 int actualStack = item?.Stack ?? 0;
@@ -313,6 +302,7 @@ namespace TBoneHunter.LunchPail
 
                 if (actualStack < remaining)
                 {
+                    // Fire alert once per occurrence; re-arms when deficit clears.
                     if (!_deficitNotified.Contains(key))
                     {
                         ShowHUD(
@@ -326,7 +316,7 @@ namespace TBoneHunter.LunchPail
                 }
                 else
                 {
-                    // Deficit resolved (stack recovered) — clear flag so another drop will re-alert.
+                    // Deficit resolved — clear flag so next drop fires a fresh alert.
                     if (_deficitNotified.Remove(key))
                         _monitor.Log($"[LunchPail][Deficit] {tag.DisplayName} key={key}: deficit cleared (stack={actualStack} >= remaining={remaining}).", LogLevel.Trace);
                 }
