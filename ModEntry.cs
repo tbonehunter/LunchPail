@@ -135,6 +135,8 @@ namespace TBoneHunter.LunchPail
             _data = Helper.Data.ReadSaveData<LunchPailData>(DataKey)
                 ?? new LunchPailData();
 
+            DeriveHasLunchPail();
+
             _consumptionManager.ResetSession();
             Monitor.Log(
                 $"[LunchPail] Save data loaded. HasLunchPail={_data.HasLunchPail}",
@@ -155,6 +157,7 @@ namespace TBoneHunter.LunchPail
 
         private void OnDayStarted(object? sender, DayStartedEventArgs e)
         {
+            DeriveHasLunchPail();
             _consumptionManager.ResetSession();
         }
 
@@ -164,6 +167,7 @@ namespace TBoneHunter.LunchPail
 
         private void OnDayEnding(object? sender, DayEndingEventArgs e)
         {
+            if (!Context.IsWorldReady) return;
             _data.StaminaCompartment.Clear();
             _data.HealthCompartment.Clear();
             Helper.Data.WriteSaveData(DataKey, _data);
@@ -251,6 +255,26 @@ namespace TBoneHunter.LunchPail
             Monitor.Log(
                 $"[LunchPail] Granted recipe to player with Mining Level {player.MiningLevel}.",
                 LogLevel.Debug);
+        }
+
+        // ----------------------------------------------------------------
+        // Derive HasLunchPail from actual game state rather than a persisted flag.
+        // Mining Level 0 → impossible to have crafted → false.
+        // Mining Level 1+ → true only if the recipe has been crafted at least once.
+        // ----------------------------------------------------------------
+
+        private void DeriveHasLunchPail()
+        {
+            var player = Game1.player;
+            if (player.MiningLevel < 1)
+            {
+                _data.HasLunchPail = false;
+                return;
+            }
+
+            _data.HasLunchPail =
+                player.craftingRecipes.TryGetValue(RecipeId, out int timesCrafted)
+                && timesCrafted > 0;
         }
     }
 }
