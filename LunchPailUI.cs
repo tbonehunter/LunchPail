@@ -53,6 +53,10 @@ namespace TBoneHunter.LunchPail
 
         private string? _tooltipText = null;
 
+        // Set to true in exitThisMenu so receiveLeftClick can bail out
+        // immediately if the base class triggers a close mid-handler.
+        private bool _isClosing = false;
+
         // ----------------------------------------------------------------
         // Constructor
         // ----------------------------------------------------------------
@@ -157,7 +161,27 @@ namespace TBoneHunter.LunchPail
 
         public override void receiveLeftClick(int x, int y, bool playSound = true)
         {
+            _monitor.Log($"[LunchPailUI] receiveLeftClick ({x},{y})", LogLevel.Trace);
+
+            // Detect close button click before base handles it so we can guard
+            // against continuing to run on a closing menu.
+            bool closeClicked = upperRightCloseButton != null
+                && upperRightCloseButton.containsPoint(x, y);
+
             base.receiveLeftClick(x, y, playSound);
+
+            if (closeClicked)
+            {
+                _monitor.Log("[LunchPailUI] Close button clicked, exiting.", LogLevel.Trace);
+                _isClosing = true;
+                return;
+            }
+
+            if (_isClosing)
+            {
+                _monitor.Log("[LunchPailUI] receiveLeftClick: menu is closing, skipping.", LogLevel.Trace);
+                return;
+            }
 
             // Center panel: assign food to a compartment
             var centerPanel = GetPanelBounds(1);
@@ -217,6 +241,7 @@ namespace TBoneHunter.LunchPail
                 responseList.ToArray(),
                 (Farmer _, string which) =>
                 {
+                    _monitor.Log($"[LunchPailUI] Assignment dialogue response: {which}", LogLevel.Trace);
                     if (which == "cancel")
                     {
                         Game1.activeClickableMenu = this;
@@ -257,6 +282,7 @@ namespace TBoneHunter.LunchPail
                 $"How many {food.DisplayName} for your Lunch Pail today?",
                 (number, price, who) =>
                 {
+                    _monitor.Log($"[LunchPailUI] Serving count selected: {number} for {food.DisplayName} (edit={isEdit})", LogLevel.Trace);
                     if (isEdit && existingTag != null)
                     {
                         existingTag.MaxServings = number;
@@ -296,6 +322,7 @@ namespace TBoneHunter.LunchPail
                 responses,
                 (Farmer _, string which) =>
                 {
+                    _monitor.Log($"[LunchPailUI] Edit dialogue response: {which} for {food.DisplayName}", LogLevel.Trace);
                     if (which == "adjust")
                     {
                         // Max for this tag = stack minus what the OTHER compartment has claimed.
@@ -428,13 +455,20 @@ namespace TBoneHunter.LunchPail
                 var item = items[i];
                 int itemY = panel.Y + 40 + i * ItemHeight;
 
+                // Suppress the native count; we render the available-to-assign number ourselves.
                 item.drawInMenu(b,
                     new Vector2(panel.X + Padding, itemY),
                     0.75f, 1f, 0.9f,
-                    StackDrawType.Draw,
+                    StackDrawType.Hide,
                     Color.White, false);
 
-                Utility.drawTextWithShadow(b, item.DisplayName,
+                // Available = full stack minus what both compartments have already claimed.
+                int claimed = GetCompartmentBudget(item, _data.StaminaCompartment)
+                            + GetCompartmentBudget(item, _data.HealthCompartment);
+                int available = item.Stack - claimed;
+                string label = $"{item.DisplayName} ({available})";
+
+                Utility.drawTextWithShadow(b, label,
                     Game1.smallFont,
                     new Vector2(panel.X + Padding + ItemIconSize + 4, itemY + 8),
                     Color.White);

@@ -29,6 +29,10 @@ namespace TBoneHunter.LunchPail
         // Incremented on each auto-consume; cleared each morning by ResetSession.
         private readonly Dictionary<string, int> _consumedToday = new();
 
+        // Tags for which a deficit HUD alert has already fired today.
+        // Cleared each morning by ResetSession alongside the other flags.
+        private readonly HashSet<string> _deficitNotified = new();
+
         // Notification flags — each fires once per day (reset by ResetSession).
         private bool _staminaLowNotified       = false;
         private bool _staminaExhaustedNotified = false;
@@ -66,6 +70,7 @@ namespace TBoneHunter.LunchPail
         public void ResetSession()
         {
             _consumedToday.Clear();
+            _deficitNotified.Clear();
 
             _staminaLowNotified       = false;
             _staminaExhaustedNotified = false;
@@ -92,6 +97,7 @@ namespace TBoneHunter.LunchPail
 
             CheckStamina(player, data, config);
             CheckHealth(player, data, config);
+            CheckDeficits(player, data);
         }
 
         // ----------------------------------------------------------------
@@ -256,6 +262,47 @@ namespace TBoneHunter.LunchPail
         /// </summary>
         private static string GetTagKey(LunchPailData.FoodTag tag) =>
             tag.ItemId + "_" + tag.Quality;
+
+        /// <summary>
+        /// Checks all tagged items across both compartments and fires a one-time-per-day
+        /// HUD alert for any whose real inventory stack has fallen below the remaining
+        /// daily budget (i.e. the player removed items mid-day that the pail was counting on).
+        /// </summary>
+        private void CheckDeficits(Farmer player, LunchPailData data)
+        {
+            CheckCompartmentDeficits(player, data.StaminaCompartment);
+            CheckCompartmentDeficits(player, data.HealthCompartment);
+        }
+
+        private void CheckCompartmentDeficits(Farmer player, List<LunchPailData.FoodTag> compartment)
+        {
+            foreach (var tag in compartment)
+            {
+                // Unlimited tags have no budget to fall below.
+                if (tag.MaxServings == int.MaxValue) continue;
+
+                var key = GetTagKey(tag);
+                if (_deficitNotified.Contains(key)) continue;
+
+                int consumed  = _consumedToday.GetValueOrDefault(key);
+                int remaining = tag.MaxServings - consumed;
+                if (remaining <= 0) continue; // budget already used up, not a deficit
+
+                var item       = FoodHelper.FindTaggedItemInInventory(player, tag);
+                int actualStack = item?.Stack ?? 0;
+
+                if (actualStack < remaining)
+                {
+                    ShowHUD(
+                        $"Your {tag.DisplayName} supply has dropped below your Lunch Pail budget.",
+                        isError: false);
+                    _deficitNotified.Add(key);
+                    _monitor.Log(
+                        $"[LunchPail] Deficit alert: {tag.DisplayName} stack={actualStack} remaining budget={remaining}.",
+                        LogLevel.Trace);
+                }
+            }
+        }
 
         /// <summary>
         /// Returns true if the tag's daily consumption budget is fully used.
