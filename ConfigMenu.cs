@@ -50,12 +50,12 @@ namespace TBoneHunter.LunchPail
                 mod: manifest,
                 name: () => "Stamina Offset (%)",
                 tooltip: () =>
-                    "How far below the food's stamina restore value (as % of max stamina) " +
-                    "your stamina must drop before auto-consumption triggers.\n" +
-                    "0 = eat as soon as you'd benefit from the full restore.\n" +
-                    "Higher values wait until you're deeper in the deficit.\n\n" +
-                    "WARNING: Values above 50% may leave you vulnerable to a death strike " +
-                    "before the Lunch Pail can respond. Not recommended in deeper mine levels.",
+                    "How far below the food's stamina restore value\n" +
+                    "(as % of max stamina) your stamina must drop before auto-consumption triggers.\n" +
+                    "0 means auto-consumption when the amount lost equals the restorative amount.\n" +
+                    "Higher values wait until you're that percentage deeper in the deficit.\n\n" +
+                    "WARNING: Values above 50% may leave you vulnerable to a death strike\n" +
+                    "before the Lunch Pail can respond. Not recommended in deeper mine levels.\n",
                 getValue: () => getConfig().StaminaOffset,
                 setValue: val => getConfig().StaminaOffset = val,
                 min: 0,
@@ -76,12 +76,12 @@ namespace TBoneHunter.LunchPail
                 mod: manifest,
                 name: () => "Health Offset (%)",
                 tooltip: () =>
-                    "How far below the food's health restore value (as % of max health) " +
-                    "your health must drop before auto-consumption triggers.\n" +
-                    "0 = eat as soon as you'd benefit from the full restore.\n" +
-                    "Higher values wait until you're deeper in the deficit.\n\n" +
-                    "WARNING: Values above 50% may leave you vulnerable to a death strike " +
-                    "before the Lunch Pail can respond. Not recommended in deeper mine levels.",
+                    "How far below the food's health restore value\n" +
+                    "(as % of max health) your health must drop before auto-consumption triggers.\n" +
+                    "0 means auto-consumption when the amount lost equals the restorative amount.\n" +
+                    "Higher values wait until you're that percentage deeper in the deficit.\n\n" +
+                    "WARNING: Values above 50% may leave you vulnerable to a death strike\n" +
+                    "before the Lunch Pail can respond. Not recommended in deeper mine levels.\n",
                 getValue: () => getConfig().HealthOffset,
                 setValue: val => getConfig().HealthOffset = val,
                 min: 0,
@@ -129,7 +129,7 @@ namespace TBoneHunter.LunchPail
 
             gmcm.AddBoolOption(
                 mod: manifest,
-                name: () => "Auto-adjust daily budget when inventory drops below budgeted amount",
+                name: () => "Auto-adjust daily budget",
                 tooltip: () =>
                     "When enabled, the serving budget for each assigned food is automatically\n" +
                     "reduced to match your actual inventory if supply has dropped mid-day.\n" +

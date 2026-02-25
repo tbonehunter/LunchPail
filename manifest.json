@@ -2,7 +2,7 @@
   "Name": "Lunch Pail",
   "Author": "tbonehunter",
   "Version": "1.1.0",
-  "Description": "Automatically consumes food when health or stamina drops below a configurable threshold.",
+  "Description": "Consume food without user command or cutscene when health or stamina drops below a configurable threshold.",
   "UniqueID": "tbonehunter.LunchPail",
   "EntryDll": "LunchPail.dll",
   "MinimumApiVersion": "4.0.0",
