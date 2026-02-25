@@ -131,11 +131,12 @@ On first load after upgrading, a lunch pail that had not been emptied the previo
 
 ## Resolution status
 
-- **Bug 1** (no quantity displayed for unlimited tags) is **fixed** in `bugfix/quantity-display-and-deficit-reduction` — unlimited tags now show the live stack count.
+- **Bug 1** (no quantity displayed for unlimited tags) is **completely fixed** in `bugfix/quantity-display-and-deficit-reduction` — unlimited tags now show the live stack count. Confirmed by log testing on February 25, 2026.
+- **Bug 2** (deficit reduction discarded when item in single compartment) is **completely fixed** — full shortage now correctly falls to whichever compartment holds the item. Confirmed by log testing on February 25, 2026.
 - The behaviour change (unlimited → explicit MaxServings) only takes effect after the player opens the Edit dialog for each item and saves a serving count. Existing unlimited tags remain fully functional in the meantime.
 
 ## Items to watch
 
-- [ ] Confirm whether the next fresh-game test (started entirely on v1.1.0) ever reproduces bare-name labels on first open. If it does, the cause is something other than a legacy save (e.g., `RefreshLists` running before inventory is fully loaded).
-- [ ] If a 1.0.0 → 1.1.0 save is tested deliberately, verify that auto-consumption still fires for unlimited tags (regression check against `IsBudgetExhausted` which short-circuits on `int.MaxValue`).
-- [ ] Monitor whether the nightly compartment-clear (`OnDayEnding`) correctly re-serializes tags with `MaxServings` set, so the value survives a save/load cycle.
+- [ ] **PROVISIONAL** — Nightly compartment-clear (`OnDayEnding`) may not be firing correctly for saves created on v1.0.0. Observed once (February 25, 2026): lunch pail was not empty at start of day on a save that may have been last written by v1.0.0. Could not be confirmed definitively. Monitor on saves known to have been created and saved entirely on v1.1.1+.
+- [ ] If a 1.0.0 → 1.1.x save is tested deliberately, verify that auto-consumption still fires for unlimited tags (regression check against `IsBudgetExhausted` which short-circuits on `int.MaxValue`).
+- [ ] Confirm whether the nightly compartment-clear correctly re-serializes tags with `MaxServings` set, so the value survives a save/load cycle.
