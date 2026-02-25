@@ -191,6 +191,14 @@ namespace TBoneHunter.LunchPail
             DrawUnassignedList(b, _unassignedFoods, centerPanel);
             DrawItemList(b, _healthFoods, _healthTags, healthPanel);
 
+            // Log all three panels once per UI open, after every panel has been drawn.
+            if (!_hasLoggedDraw)
+            {
+                LogPanelDraw("Stamina", _staminaFoods, _staminaTags);
+                LogPanelDraw("Health",  _healthFoods,  _healthTags);
+                _hasLoggedDraw = true;
+            }
+
             // Close button
             base.draw(b);
 
@@ -509,22 +517,25 @@ namespace TBoneHunter.LunchPail
                     new Vector2(panel.X + Padding + ItemIconSize + 4, itemY + 8),
                     labelColor);
             }
+        }
 
-            // Log the final rendered labels once per UI open to confirm what the player sees.
-            if (!_hasLoggedDraw && items.Count > 0)
+        /// <summary>
+        /// Logs the rendered label for every item in one panel. Called from draw()
+        /// once per UI open after all panels have been drawn, so all three panels
+        /// are captured before the guard flag is set.
+        /// </summary>
+        private void LogPanelDraw(string panelName, List<SObject> items, List<LunchPailData.FoodTag> tags)
+        {
+            for (int i = 0; i < items.Count; i++)
             {
-                for (int i = 0; i < items.Count; i++)
-                {
-                    var item = items[i];
-                    var tag  = tags[i];
-                    int displayCount = tag.MaxServings == int.MaxValue
-                        ? item.Stack
-                        : Math.Min(tag.MaxServings, item.Stack);
-                    _monitor.Log(
-                        $"[LunchPailUI][Draw] Rendered: '{item.DisplayName} (×{displayCount})' | MaxServings={(tag.MaxServings == int.MaxValue ? "unlimited" : tag.MaxServings.ToString())} Stack={item.Stack}",
-                        LogLevel.Debug);
-                }
-                _hasLoggedDraw = true;
+                var item = items[i];
+                var tag  = tags[i];
+                int displayCount = tag.MaxServings == int.MaxValue
+                    ? item.Stack
+                    : Math.Min(tag.MaxServings, item.Stack);
+                _monitor.Log(
+                    $"[LunchPailUI][Draw][{panelName}] Rendered: '{item.DisplayName} (×{displayCount})' | MaxServings={(tag.MaxServings == int.MaxValue ? "unlimited" : tag.MaxServings.ToString())} Stack={item.Stack}",
+                    LogLevel.Debug);
             }
         }
 
