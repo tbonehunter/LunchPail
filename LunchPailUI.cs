@@ -58,6 +58,9 @@ namespace TBoneHunter.LunchPail
         // immediately if the base class triggers a close mid-handler.
         private bool _isClosing = false;
 
+        // Throttles draw-time logging to the first draw only per UI open.
+        private bool _hasLoggedDraw = false;
+
         // ----------------------------------------------------------------
         // Constructor
         // ----------------------------------------------------------------
@@ -96,21 +99,53 @@ namespace TBoneHunter.LunchPail
         {
             var player = Game1.player;
 
+            // Reset the draw-log flag so each fresh open logs its first frame.
+            _hasLoggedDraw = false;
+
             // Build parallel (tag, SObject) pairs so the draw layer can access MaxServings
             // for each resolved item without a second lookup.
             var staminaPairs = _data.StaminaCompartment
                 .Select(tag => (tag, item: FoodHelper.FindTaggedItemInInventory(player, tag)))
-                .Where(p => p.item != null)
                 .ToList();
+
+            // Log tags that have no matching inventory item (silent drops).
+            foreach (var p in staminaPairs.Where(p => p.item == null))
+                _monitor.Log(
+                    $"[LunchPailUI][RefreshLists] Stamina tag not found in inventory: {p.tag.DisplayName} id={p.tag.ItemId} quality={p.tag.Quality} MaxServings={p.tag.MaxServings}",
+                    LogLevel.Debug);
+
+            staminaPairs = staminaPairs.Where(p => p.item != null).ToList();
             _staminaFoods = staminaPairs.Select(p => p.item!).ToList();
             _staminaTags  = staminaPairs.Select(p => p.tag).ToList();
 
+            foreach (var (tag, item) in staminaPairs.Select(p => (p.tag, p.item!)))
+            {
+                int displayCount = tag.MaxServings == int.MaxValue ? item.Stack : Math.Min(tag.MaxServings, item.Stack);
+                _monitor.Log(
+                    $"[LunchPailUI][RefreshLists] Stamina: {tag.DisplayName} MaxServings={(tag.MaxServings == int.MaxValue ? "unlimited" : tag.MaxServings.ToString())} Stack={item.Stack} -> label=×{displayCount}",
+                    LogLevel.Debug);
+            }
+
             var healthPairs = _data.HealthCompartment
                 .Select(tag => (tag, item: FoodHelper.FindTaggedItemInInventory(player, tag)))
-                .Where(p => p.item != null)
                 .ToList();
+
+            foreach (var p in healthPairs.Where(p => p.item == null))
+                _monitor.Log(
+                    $"[LunchPailUI][RefreshLists] Health tag not found in inventory: {p.tag.DisplayName} id={p.tag.ItemId} quality={p.tag.Quality} MaxServings={p.tag.MaxServings}",
+                    LogLevel.Debug);
+
+            healthPairs = healthPairs.Where(p => p.item != null).ToList();
             _healthFoods = healthPairs.Select(p => p.item!).ToList();
             _healthTags  = healthPairs.Select(p => p.tag).ToList();
+
+            foreach (var (tag, item) in healthPairs.Select(p => (p.tag, p.item!)))
+            {
+                int displayCount = tag.MaxServings == int.MaxValue ? item.Stack : Math.Min(tag.MaxServings, item.Stack);
+                _monitor.Log(
+                    $"[LunchPailUI][RefreshLists] Health:   {tag.DisplayName} MaxServings={(tag.MaxServings == int.MaxValue ? "unlimited" : tag.MaxServings.ToString())} Stack={item.Stack} -> label=×{displayCount}",
+                    LogLevel.Debug);
+            }
 
             // An item only leaves the center panel when every serving in the stack is
             // already budgeted across both compartments combined.
@@ -296,10 +331,11 @@ namespace TBoneHunter.LunchPail
                     _monitor.Log($"[LunchPailUI] Serving count selected: {number} for {food.DisplayName} (edit={isEdit})", LogLevel.Trace);
                     if (isEdit && existingTag != null)
                     {
+                        int oldMax = existingTag.MaxServings;
                         existingTag.MaxServings = number;
                         _monitor.Log(
-                            $"[LunchPail] Adjusted {food.DisplayName} serving budget to {number}.",
-                            LogLevel.Trace);
+                            $"[LunchPailUI][Edit] {food.DisplayName} serving budget changed: {(oldMax == int.MaxValue ? "unlimited" : oldMax.ToString())} -> {number} | CurrentStack={food.Stack}",
+                            LogLevel.Debug);
                     }
                     else
                     {
@@ -370,8 +406,8 @@ namespace TBoneHunter.LunchPail
                 _data.HealthCompartment.Add(tag);
 
             _monitor.Log(
-                $"[LunchPail] Assigned {food.DisplayName} to {(isStamina ? "stamina" : "health")} compartment.",
-                LogLevel.Trace);
+                $"[LunchPailUI][Assign] {food.DisplayName} -> {(isStamina ? "Stamina" : "Health")} compartment | MaxServings={(maxServings == int.MaxValue ? "unlimited" : maxServings.ToString())} | CurrentStack={food.Stack}",
+                LogLevel.Debug);
         }
 
         /// <summary>
@@ -459,17 +495,36 @@ namespace TBoneHunter.LunchPail
                         Color.Red * 0.25f);
                 }
 
-                // Show the serving budget alongside the name when a specific limit is set.
-                // Tint label red in alert-only mode so the deficit stands out clearly.
-                string label = tag.MaxServings == int.MaxValue
-                    ? item.DisplayName
-                    : $"{item.DisplayName} (×{tag.MaxServings})";
+                // Always show a quantity alongside the name.
+                // When MaxServings is unlimited, the effective quantity is the full live stack.
+                // When explicit, clamp to the live stack in case inventory shrank mid-day.
+                int displayCount = tag.MaxServings == int.MaxValue
+                    ? item.Stack
+                    : Math.Min(tag.MaxServings, item.Stack);
+                string label = $"{item.DisplayName} (×{displayCount})";
                 Color labelColor = (inDeficit && !_config().AutoAdjustBudget) ? Color.Red : Color.White;
 
                 Utility.drawTextWithShadow(b, label,
                     Game1.smallFont,
                     new Vector2(panel.X + Padding + ItemIconSize + 4, itemY + 8),
                     labelColor);
+            }
+
+            // Log the final rendered labels once per UI open to confirm what the player sees.
+            if (!_hasLoggedDraw && items.Count > 0)
+            {
+                for (int i = 0; i < items.Count; i++)
+                {
+                    var item = items[i];
+                    var tag  = tags[i];
+                    int displayCount = tag.MaxServings == int.MaxValue
+                        ? item.Stack
+                        : Math.Min(tag.MaxServings, item.Stack);
+                    _monitor.Log(
+                        $"[LunchPailUI][Draw] Rendered: '{item.DisplayName} (×{displayCount})' | MaxServings={(tag.MaxServings == int.MaxValue ? "unlimited" : tag.MaxServings.ToString())} Stack={item.Stack}",
+                        LogLevel.Debug);
+                }
+                _hasLoggedDraw = true;
             }
         }
 

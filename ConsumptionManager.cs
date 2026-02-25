@@ -336,18 +336,44 @@ namespace TBoneHunter.LunchPail
                 int actualStack = item?.Stack ?? 0;
 
                 _monitor.Log(
-                    $"[LunchPail][Deficit] {sampleTag.DisplayName} key={key}: totalRemaining={totalRemaining} actualStack={actualStack} deficit={actualStack < totalRemaining}.",
-                    LogLevel.Trace);
+                    $"[LunchPail][Deficit] {sampleTag.DisplayName} key={key}: totalRemaining={totalRemaining} actualStack={actualStack} " +
+                    $"staminaTags={staminaTags.Count} healthTags={healthTags.Count} deficit={actualStack < totalRemaining}",
+                    LogLevel.Debug);
 
                 if (actualStack < totalRemaining)
                 {
                     if (config.AutoAdjustBudget)
                     {
-                        // Distribute shortage: health absorbs 50% (floor), stamina absorbs the rest
-                        // (stamina naturally takes the extra 1 on odd shortages — health is protected).
-                        int shortage         = totalRemaining - actualStack;
-                        int healthReduction  = shortage / 2;
-                        int staminaReduction = shortage - healthReduction;
+                        int shortage = totalRemaining - actualStack;
+
+                        // When the item sits in only one compartment the other tag list is empty.
+                        // In that case ALL of the reduction must go to whichever list is populated;
+                        // splitting evenly would discard the half aimed at the empty list and leave
+                        // the displayed budget permanently higher than the actual stack.
+                        int healthReduction, staminaReduction;
+                        if (healthTags.Count == 0)
+                        {
+                            healthReduction  = 0;
+                            staminaReduction = shortage;
+                        }
+                        else if (staminaTags.Count == 0)
+                        {
+                            staminaReduction = 0;
+                            healthReduction  = shortage;
+                        }
+                        else
+                        {
+                            // Both compartments hold this item — split evenly;
+                            // stamina absorbs the odd unit so health is protected.
+                            healthReduction  = shortage / 2;
+                            staminaReduction = shortage - healthReduction;
+                        }
+
+                        _monitor.Log(
+                            $"[LunchPail][Deficit] AutoAdjust: {sampleTag.DisplayName} key={key} shortage={shortage} " +
+                            $"staminaTags={staminaTags.Count} healthTags={healthTags.Count} " +
+                            $"staminaReduction={staminaReduction} healthReduction={healthReduction}",
+                            LogLevel.Debug);
 
                         ApplyBudgetReduction(healthTags,  healthReduction,  data.HealthCompartment);
                         ApplyBudgetReduction(staminaTags, staminaReduction, data.StaminaCompartment);
@@ -359,9 +385,6 @@ namespace TBoneHunter.LunchPail
                                 $"Your {sampleTag.DisplayName} Lunch Pail budget has been adjusted to match your available supply.",
                                 isError: false);
                             _deficitNotified.Add(key);
-                            _monitor.Log(
-                                $"[LunchPail] Auto-adjusted budget: {sampleTag.DisplayName} shortage={shortage} (healthReduction={healthReduction}, staminaReduction={staminaReduction}).",
-                                LogLevel.Trace);
                         }
                     }
                     else
@@ -374,8 +397,8 @@ namespace TBoneHunter.LunchPail
                                 isError: false);
                             _deficitNotified.Add(key);
                             _monitor.Log(
-                                $"[LunchPail] Deficit alert fired: {sampleTag.DisplayName} stack={actualStack} totalRemainingBudget={totalRemaining}.",
-                                LogLevel.Trace);
+                                $"[LunchPail][Deficit] Alert fired: {sampleTag.DisplayName} key={key} stack={actualStack} totalRemainingBudget={totalRemaining} staminaTags={staminaTags.Count} healthTags={healthTags.Count}",
+                                LogLevel.Debug);
                         }
                     }
                 }
@@ -399,6 +422,8 @@ namespace TBoneHunter.LunchPail
             List<LunchPailData.FoodTag> tags, int reduction,
             List<LunchPailData.FoodTag> compartment)
         {
+            if (reduction <= 0) return;
+
             var toRemove = new List<LunchPailData.FoodTag>();
             foreach (var tag in tags)
             {
@@ -406,14 +431,26 @@ namespace TBoneHunter.LunchPail
                 int consumed         = _consumedToday.GetValueOrDefault(GetTagKey(tag));
                 int currentRemaining = tag.MaxServings - consumed;
                 int canReduce        = Math.Max(0, Math.Min(currentRemaining, reduction));
+                int maxBefore        = tag.MaxServings;
                 tag.MaxServings     -= canReduce;
                 reduction           -= canReduce;
+
+                _monitor.Log(
+                    $"[LunchPail][BudgetReduction] {tag.DisplayName} key={GetTagKey(tag)} MaxServings {maxBefore}->{tag.MaxServings} " +
+                    $"(consumed={consumed} currentRemaining={currentRemaining} canReduce={canReduce} reductionLeft={reduction})",
+                    LogLevel.Debug);
+
                 // A zeroed tag is useless and causes ghost rows in the UI — remove it.
                 if (tag.MaxServings <= 0)
                     toRemove.Add(tag);
             }
             foreach (var tag in toRemove)
+            {
+                _monitor.Log(
+                    $"[LunchPail][BudgetReduction] Removing zeroed tag: {tag.DisplayName} key={GetTagKey(tag)}",
+                    LogLevel.Debug);
                 compartment.Remove(tag);
+            }
         }
 
         /// <summary>
