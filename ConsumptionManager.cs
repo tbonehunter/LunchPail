@@ -335,11 +335,6 @@ namespace TBoneHunter.LunchPail
                 var item        = FoodHelper.FindTaggedItemInInventory(player, sampleTag);
                 int actualStack = item?.Stack ?? 0;
 
-                _monitor.Log(
-                    $"[LunchPail][Deficit] {sampleTag.DisplayName} key={key}: totalRemaining={totalRemaining} actualStack={actualStack} " +
-                    $"staminaTags={staminaTags.Count} healthTags={healthTags.Count} deficit={actualStack < totalRemaining}",
-                    LogLevel.Debug);
-
                 if (actualStack < totalRemaining)
                 {
                     if (config.AutoAdjustBudget)
