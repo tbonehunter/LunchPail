@@ -111,7 +111,7 @@ namespace TBoneHunter.LunchPail
             if (foods.Count > 0)
             {
                 var next = foods.First();
-                if (FoodHelper.ShouldTriggerStamina(next, player, config.StaminaOffset))
+                if (FoodHelper.ShouldTriggerStamina(next, player, config.StaminaTargetFill, config.UseStaminaFloor))
                 {
                     FoodHelper.SilentConsume(next, player);
                     RecordConsumptionByItem(next, data.StaminaCompartment);
@@ -143,7 +143,7 @@ namespace TBoneHunter.LunchPail
             }
 
             var fallbackNext = fallbackFoods.First();
-            if (!FoodHelper.ShouldTriggerStamina(fallbackNext, player, config.StaminaOffset)) return;
+            if (!FoodHelper.ShouldTriggerStamina(fallbackNext, player, config.StaminaTargetFill, config.UseStaminaFloor)) return;
 
             // Notify once that stamina compartment is exhausted and fallback is active
             if (!_staminaExhaustedNotified)
@@ -176,7 +176,7 @@ namespace TBoneHunter.LunchPail
             if (foods.Count > 0)
             {
                 var next = foods.First();
-                if (FoodHelper.ShouldTriggerHealth(next, player, config.HealthOffset))
+                if (FoodHelper.ShouldTriggerHealth(next, player, config.HealthTargetFill, config.UseHealthFloor))
                 {
                     FoodHelper.SilentConsume(next, player);
                     RecordConsumptionByItem(next, data.HealthCompartment);
@@ -208,7 +208,7 @@ namespace TBoneHunter.LunchPail
             }
 
             var fallbackNext = fallbackFoods.First();
-            if (!FoodHelper.ShouldTriggerHealth(fallbackNext, player, config.HealthOffset)) return;
+            if (!FoodHelper.ShouldTriggerHealth(fallbackNext, player, config.HealthTargetFill, config.UseHealthFloor)) return;
 
             // Notify once that health compartment is exhausted and fallback is active
             if (!_healthExhaustedNotified)

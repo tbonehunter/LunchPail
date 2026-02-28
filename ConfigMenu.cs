@@ -48,19 +48,32 @@ namespace TBoneHunter.LunchPail
 
             gmcm.AddNumberOption(
                 mod: manifest,
-                name: () => "Stamina Offset (%)",
+                name: () => "Stamina Target Fill (%)",
                 tooltip: () =>
-                    "How far below the food's stamina restore value\n" +
-                    "(as % of max stamina) your stamina must drop before auto-consumption triggers.\n" +
-                    "0 means auto-consumption when the amount lost equals the restorative amount.\n" +
-                    "Higher values wait until you're that percentage deeper in the deficit.\n\n" +
-                    "WARNING: Values above 50% may leave you vulnerable to a death strike\n" +
-                    "before the Lunch Pail can respond. Not recommended in deeper mine levels.\n",
-                getValue: () => getConfig().StaminaOffset,
-                setValue: val => getConfig().StaminaOffset = val,
-                min: 0,
+                    "Auto-consume stamina food when eating it would restore your stamina\n" +
+                    "to at least this percentage of full.\n" +
+                    "Example: 90 means eat when stamina is low enough that the food\n" +
+                    "would bring you back to 90% or more of full.\n\n" +
+                    "Note: if the food's restore value exceeds this target, the trigger\n" +
+                    "point becomes 0% (never fires from this setting alone).\n" +
+                    "Enable 'Use Base Stamina Level' below to protect against that case.",
+                getValue: () => getConfig().StaminaTargetFill,
+                setValue: val => getConfig().StaminaTargetFill = val,
+                min: 1,
                 max: 100,
                 interval: 1
+            );
+
+            gmcm.AddBoolOption(
+                mod: manifest,
+                name: () => "Use Base Stamina Level",
+                tooltip: () =>
+                    "Never lets your Stamina drop below 25% without consuming food,\n" +
+                    "to avoid exhaustion from sudden depletion.\n" +
+                    "This fires regardless of the food's restore value and overrides\n" +
+                    "the Target Fill setting when stamina is critically low.",
+                getValue: () => getConfig().UseStaminaFloor,
+                setValue: val => getConfig().UseStaminaFloor = val
             );
 
             // ----------------------------------------------------------------
@@ -74,19 +87,32 @@ namespace TBoneHunter.LunchPail
 
             gmcm.AddNumberOption(
                 mod: manifest,
-                name: () => "Health Offset (%)",
+                name: () => "Health Target Fill (%)",
                 tooltip: () =>
-                    "How far below the food's health restore value\n" +
-                    "(as % of max health) your health must drop before auto-consumption triggers.\n" +
-                    "0 means auto-consumption when the amount lost equals the restorative amount.\n" +
-                    "Higher values wait until you're that percentage deeper in the deficit.\n\n" +
-                    "WARNING: Values above 50% may leave you vulnerable to a death strike\n" +
-                    "before the Lunch Pail can respond. Not recommended in deeper mine levels.\n",
-                getValue: () => getConfig().HealthOffset,
-                setValue: val => getConfig().HealthOffset = val,
-                min: 0,
+                    "Auto-consume health food when eating it would restore your health\n" +
+                    "to at least this percentage of full.\n" +
+                    "Example: 90 means eat when health is low enough that the food\n" +
+                    "would bring you back to 90% or more of full.\n\n" +
+                    "Note: if the food's restore value exceeds this target, the trigger\n" +
+                    "point becomes 0% (never fires from this setting alone).\n" +
+                    "Enable 'Use Base Health Level' below to protect against that case.",
+                getValue: () => getConfig().HealthTargetFill,
+                setValue: val => getConfig().HealthTargetFill = val,
+                min: 1,
                 max: 100,
                 interval: 1
+            );
+
+            gmcm.AddBoolOption(
+                mod: manifest,
+                name: () => "Use Base Health Level",
+                tooltip: () =>
+                    "Never lets your Health drop below 25% without consuming food,\n" +
+                    "to avoid death from sudden depletion.\n" +
+                    "This fires regardless of the food's restore value and overrides\n" +
+                    "the Target Fill setting when health is critically low.",
+                getValue: () => getConfig().UseHealthFloor,
+                setValue: val => getConfig().UseHealthFloor = val
             );
 
             // ----------------------------------------------------------------

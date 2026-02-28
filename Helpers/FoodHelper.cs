@@ -85,31 +85,39 @@ namespace TBoneHunter.LunchPail.Helpers
         }
 
         /// <summary>
-        /// Returns true if the player's stamina has dropped to or below
-        /// the trigger threshold for the given food item and offset setting.
-        /// Trigger point = 100% - food's restore% - offset%
-        /// At offset 0, fires exactly when eating the food would fill
-        /// the player back to full. Higher offsets wait deeper into the deficit.
+        /// Returns true if the player's stamina has dropped to or below the trigger
+        /// threshold for the given food item.
+        /// Trigger point = targetFill% - food's restore%
+        /// (clamped to 0 so a high-restore food never produces a negative threshold).
+        /// If useFloor is true, also triggers unconditionally when stamina is at or
+        /// below 25%, regardless of food value.
         /// </summary>
-        public static bool ShouldTriggerStamina(SObject obj, Farmer player, int offsetPercent)
+        public static bool ShouldTriggerStamina(
+            SObject obj, Farmer player, int targetFillPercent, bool useFloor)
         {
+            float currentPercent = GetCurrentStaminaPercent(player);
+            if (useFloor && currentPercent <= 25f) return true;
             float restorePercent = GetStaminaRestorePercent(obj, player);
-            float triggerPoint = Math.Max(0f, 100f - restorePercent - offsetPercent);
-            return GetCurrentStaminaPercent(player) <= triggerPoint;
+            float triggerPoint = Math.Max(0f, targetFillPercent - restorePercent);
+            return currentPercent <= triggerPoint;
         }
 
         /// <summary>
-        /// Returns true if the player's health has dropped to or below
-        /// the trigger threshold for the given food item and offset setting.
-        /// Trigger point = 100% - food's restore% - offset%
-        /// At offset 0, fires exactly when eating the food would fill
-        /// the player back to full. Higher offsets wait deeper into the deficit.
+        /// Returns true if the player's health has dropped to or below the trigger
+        /// threshold for the given food item.
+        /// Trigger point = targetFill% - food's restore%
+        /// (clamped to 0 so a high-restore food never produces a negative threshold).
+        /// If useFloor is true, also triggers unconditionally when health is at or
+        /// below 25%, regardless of food value.
         /// </summary>
-        public static bool ShouldTriggerHealth(SObject obj, Farmer player, int offsetPercent)
+        public static bool ShouldTriggerHealth(
+            SObject obj, Farmer player, int targetFillPercent, bool useFloor)
         {
+            float currentPercent = GetCurrentHealthPercent(player);
+            if (useFloor && currentPercent <= 25f) return true;
             float restorePercent = GetHealthRestorePercent(obj, player);
-            float triggerPoint = Math.Max(0f, 100f - restorePercent - offsetPercent);
-            return GetCurrentHealthPercent(player) <= triggerPoint;
+            float triggerPoint = Math.Max(0f, targetFillPercent - restorePercent);
+            return currentPercent <= triggerPoint;
         }
 
         /// <summary>
