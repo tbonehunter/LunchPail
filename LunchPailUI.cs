@@ -61,6 +61,12 @@ namespace TBoneHunter.LunchPail
         // Throttles draw-time logging to the first draw only per UI open.
         private bool _hasLoggedDraw = false;
 
+        // Counter for periodic inventory refresh while the UI is open.
+        // Keeps displayed quantities in sync with auto-consumption and
+        // manual eating without relying on stale SObject references.
+        private int _refreshTick = 0;
+        private const int UIRefreshInterval = 30; // match ConsumptionManager cadence
+
         // ----------------------------------------------------------------
         // Constructor
         // ----------------------------------------------------------------
@@ -95,12 +101,15 @@ namespace TBoneHunter.LunchPail
         // Refresh resolved item lists from inventory + tags
         // ----------------------------------------------------------------
 
-        private void RefreshLists()
+        private void RefreshLists(bool isPeriodicUpdate = false)
         {
             var player = Game1.player;
 
-            // Reset the draw-log flag so each fresh open logs its first frame.
-            _hasLoggedDraw = false;
+            // Only reset the draw-log flag for intentional refreshes (UI open,
+            // assignment/edit/unassign). Periodic background refreshes must not
+            // reset it or the draw log would re-fire every 30 ticks.
+            if (!isPeriodicUpdate)
+                _hasLoggedDraw = false;
 
             // Build parallel (tag, SObject) pairs so the draw layer can access MaxServings
             // for each resolved item without a second lookup.
@@ -110,20 +119,25 @@ namespace TBoneHunter.LunchPail
 
             // Log tags that have no matching inventory item (silent drops).
             foreach (var p in staminaPairs.Where(p => p.item == null))
-                _monitor.Log(
-                    $"[LunchPailUI][RefreshLists] Stamina tag not found in inventory: {p.tag.DisplayName} id={p.tag.ItemId} quality={p.tag.Quality} MaxServings={p.tag.MaxServings}",
-                    LogLevel.Debug);
+                if (!isPeriodicUpdate)
+                    _monitor.Log(
+                        $"[LunchPailUI][RefreshLists] Stamina tag not found in inventory: {p.tag.DisplayName} id={p.tag.ItemId} quality={p.tag.Quality} MaxServings={p.tag.MaxServings}",
+                        LogLevel.Debug);
 
             staminaPairs = staminaPairs.Where(p => p.item != null).ToList();
             _staminaFoods = staminaPairs.Select(p => p.item!).ToList();
             _staminaTags  = staminaPairs.Select(p => p.tag).ToList();
 
-            foreach (var (tag, item) in staminaPairs.Select(p => (p.tag, p.item!)))
+            if (!isPeriodicUpdate)
             {
-                int displayCount = tag.MaxServings == int.MaxValue ? item.Stack : Math.Min(tag.MaxServings, item.Stack);
-                _monitor.Log(
-                    $"[LunchPailUI][RefreshLists] Stamina: {tag.DisplayName} MaxServings={(tag.MaxServings == int.MaxValue ? "unlimited" : tag.MaxServings.ToString())} Stack={item.Stack} -> label=×{displayCount}",
-                    LogLevel.Debug);
+                foreach (var (tag, item) in staminaPairs.Select(p => (p.tag, p.item!)))
+                {
+                    int displayCount = tag.MaxServings == int.MaxValue ? item.Stack : Math.Min(tag.MaxServings, item.Stack);
+                    string maxStr = tag.MaxServings == int.MaxValue ? "unlimited" : tag.MaxServings.ToString();
+                    _monitor.Log(
+                        $"[LunchPailUI][RefreshLists] Stamina: {tag.DisplayName} MaxServings={maxStr} Stack={item.Stack} -> label=\u00d7{displayCount}",
+                        LogLevel.Debug);
+                }
             }
 
             var healthPairs = _data.HealthCompartment
@@ -131,20 +145,25 @@ namespace TBoneHunter.LunchPail
                 .ToList();
 
             foreach (var p in healthPairs.Where(p => p.item == null))
-                _monitor.Log(
-                    $"[LunchPailUI][RefreshLists] Health tag not found in inventory: {p.tag.DisplayName} id={p.tag.ItemId} quality={p.tag.Quality} MaxServings={p.tag.MaxServings}",
-                    LogLevel.Debug);
+                if (!isPeriodicUpdate)
+                    _monitor.Log(
+                        $"[LunchPailUI][RefreshLists] Health tag not found in inventory: {p.tag.DisplayName} id={p.tag.ItemId} quality={p.tag.Quality} MaxServings={p.tag.MaxServings}",
+                        LogLevel.Debug);
 
             healthPairs = healthPairs.Where(p => p.item != null).ToList();
             _healthFoods = healthPairs.Select(p => p.item!).ToList();
             _healthTags  = healthPairs.Select(p => p.tag).ToList();
 
-            foreach (var (tag, item) in healthPairs.Select(p => (p.tag, p.item!)))
+            if (!isPeriodicUpdate)
             {
-                int displayCount = tag.MaxServings == int.MaxValue ? item.Stack : Math.Min(tag.MaxServings, item.Stack);
-                _monitor.Log(
-                    $"[LunchPailUI][RefreshLists] Health:   {tag.DisplayName} MaxServings={(tag.MaxServings == int.MaxValue ? "unlimited" : tag.MaxServings.ToString())} Stack={item.Stack} -> label=×{displayCount}",
-                    LogLevel.Debug);
+                foreach (var (tag, item) in healthPairs.Select(p => (p.tag, p.item!)))
+                {
+                    int displayCount = tag.MaxServings == int.MaxValue ? item.Stack : Math.Min(tag.MaxServings, item.Stack);
+                    string maxStr = tag.MaxServings == int.MaxValue ? "unlimited" : tag.MaxServings.ToString();
+                    _monitor.Log(
+                        $"[LunchPailUI][RefreshLists] Health:   {tag.DisplayName} MaxServings={maxStr} Stack={item.Stack} -> label=\u00d7{displayCount}",
+                        LogLevel.Debug);
+                }
             }
 
             // An item only leaves the center panel when every serving in the stack is
@@ -161,7 +180,27 @@ namespace TBoneHunter.LunchPail
                 .ToList();
         }
 
-        // ----------------------------------------------------------------        // Draw
+        // ----------------------------------------------------------------
+        // Update
+        // ----------------------------------------------------------------
+
+        /// <summary>
+        /// Periodically re-queries inventory item references so that quantities
+        /// auto-consumed or manually eaten while the UI is open are reflected
+        /// immediately without waiting for a full user interaction.
+        /// </summary>
+        public override void update(GameTime time)
+        {
+            base.update(time);
+            if (++_refreshTick >= UIRefreshInterval)
+            {
+                _refreshTick = 0;
+                RefreshLists(isPeriodicUpdate: true);
+            }
+        }
+
+        // ----------------------------------------------------------------
+        // Draw
         // ----------------------------------------------------------------
 
         public override void draw(SpriteBatch b)
