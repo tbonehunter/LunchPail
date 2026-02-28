@@ -132,10 +132,12 @@ namespace TBoneHunter.LunchPail
             {
                 foreach (var (tag, item) in staminaPairs.Select(p => (p.tag, p.item!)))
                 {
-                    int displayCount = tag.MaxServings == int.MaxValue ? item.Stack : Math.Min(tag.MaxServings, item.Stack);
+                    int consumed = _consumptionManager.GetConsumedToday(tag);
+                    int remainingBudget = tag.MaxServings - consumed;
+                    int displayCount = tag.MaxServings == int.MaxValue ? item.Stack : Math.Min(Math.Max(0, remainingBudget), item.Stack);
                     string maxStr = tag.MaxServings == int.MaxValue ? "unlimited" : tag.MaxServings.ToString();
                     _monitor.Log(
-                        $"[LunchPailUI][RefreshLists] Stamina: {tag.DisplayName} MaxServings={maxStr} Stack={item.Stack} -> label=\u00d7{displayCount}",
+                        $"[LunchPailUI][RefreshLists] Stamina: {tag.DisplayName} MaxServings={maxStr} Consumed={consumed} Stack={item.Stack} -> label=\u00d7{displayCount}",
                         LogLevel.Debug);
                 }
             }
@@ -158,10 +160,12 @@ namespace TBoneHunter.LunchPail
             {
                 foreach (var (tag, item) in healthPairs.Select(p => (p.tag, p.item!)))
                 {
-                    int displayCount = tag.MaxServings == int.MaxValue ? item.Stack : Math.Min(tag.MaxServings, item.Stack);
+                    int consumed = _consumptionManager.GetConsumedToday(tag);
+                    int remainingBudget = tag.MaxServings - consumed;
+                    int displayCount = tag.MaxServings == int.MaxValue ? item.Stack : Math.Min(Math.Max(0, remainingBudget), item.Stack);
                     string maxStr = tag.MaxServings == int.MaxValue ? "unlimited" : tag.MaxServings.ToString();
                     _monitor.Log(
-                        $"[LunchPailUI][RefreshLists] Health:   {tag.DisplayName} MaxServings={maxStr} Stack={item.Stack} -> label=\u00d7{displayCount}",
+                        $"[LunchPailUI][RefreshLists] Health:   {tag.DisplayName} MaxServings={maxStr} Consumed={consumed} Stack={item.Stack} -> label=\u00d7{displayCount}",
                         LogLevel.Debug);
                 }
             }
@@ -544,10 +548,13 @@ namespace TBoneHunter.LunchPail
 
                 // Always show a quantity alongside the name.
                 // When MaxServings is unlimited, the effective quantity is the full live stack.
-                // When explicit, clamp to the live stack in case inventory shrank mid-day.
+                // When explicit, subtract today's consumption from the budget before clamping
+                // to the live stack so the display reflects remaining servings, not original budget.
+                int consumed = _consumptionManager.GetConsumedToday(tag);
+                int remainingBudget = tag.MaxServings - consumed;
                 int displayCount = tag.MaxServings == int.MaxValue
                     ? item.Stack
-                    : Math.Min(tag.MaxServings, item.Stack);
+                    : Math.Min(Math.Max(0, remainingBudget), item.Stack);
                 string label = $"{item.DisplayName} (×{displayCount})";
                 Color labelColor = (inDeficit && !_config().AutoAdjustBudget) ? Color.Red : Color.White;
 
@@ -569,11 +576,14 @@ namespace TBoneHunter.LunchPail
             {
                 var item = items[i];
                 var tag  = tags[i];
+                int consumed = _consumptionManager.GetConsumedToday(tag);
+                int remainingBudget = tag.MaxServings - consumed;
                 int displayCount = tag.MaxServings == int.MaxValue
                     ? item.Stack
-                    : Math.Min(tag.MaxServings, item.Stack);
+                    : Math.Min(Math.Max(0, remainingBudget), item.Stack);
+                string maxStr = tag.MaxServings == int.MaxValue ? "unlimited" : tag.MaxServings.ToString();
                 _monitor.Log(
-                    $"[LunchPailUI][Draw][{panelName}] Rendered: '{item.DisplayName} (×{displayCount})' | MaxServings={(tag.MaxServings == int.MaxValue ? "unlimited" : tag.MaxServings.ToString())} Stack={item.Stack}",
+                    $"[LunchPailUI][Draw][{panelName}] Rendered: '{item.DisplayName} (\u00d7{displayCount})' | MaxServings={maxStr} Stack={item.Stack} Consumed={consumed}",
                     LogLevel.Debug);
             }
         }
