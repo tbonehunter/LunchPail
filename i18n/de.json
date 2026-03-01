@@ -8,7 +8,7 @@
   "config.section.controls": "Steuerung",
 
   "config.staminaTargetFill.name": "Ausdauer-Zielfüllung (%)",
-  "config.staminaTargetFill.tooltip": "Konsumiert automatisch Ausdauernahrung, wenn das Essen deine Ausdauer\nauf mindestens diesen Prozentsatz auffullen würde.\nBeispiel: 90 bedeutet essen, wenn die Ausdauer so niedrig ist,\ndass das Essen sie auf 90 % oder mehr auffüllen würde.\n\nHinweis: Übersteigt der Wiederherstellungswert dieses Ziel,\nwird der Auslösepunkt 0 % (dieser Wert allein löst es nie aus).\nAktiviere 'Basisausdauer-Level verwenden' als Schutz dagegen.",
+  "config.staminaTargetFill.tooltip": "Konsumiert automatisch Ausdauernahrung, wenn das Essen deine Ausdauer\nauf mindestens diesen Prozentsatz auffüllen würde.\nBeispiel: 90 bedeutet essen, wenn die Ausdauer so niedrig ist,\ndass das Essen sie auf 90 % oder mehr auffüllen würde.\n\nHinweis: Übersteigt der Wiederherstellungswert dieses Ziel,\nwird der Auslösepunkt 0 % (dieser Wert allein löst es nie aus).\nAktiviere 'Basisausdauer-Level verwenden' als Schutz dagegen.",
 
   "config.useStaminaFloor.name": "Basisausdauer-Level verwenden",
   "config.useStaminaFloor.tooltip": "Lässt die Ausdauer nie unter 25 % fallen, ohne Nahrung zu konsumieren,\num Erschöpfung durch plötzliche Entleerung zu vermeiden.\nDies wird unabhängig vom Wiederherstellungswert ausgelöst\nund überschreibt die Zielfüllung bei kritisch niedriger Ausdauer.",

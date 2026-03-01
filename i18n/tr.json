@@ -26,7 +26,7 @@
   "config.sortOrder.random": "Rastgele",
 
   "config.autoAdjustBudget.name": "Günlük bütçeyi otomatik ayarla",
-  "config.autoAdjustBudget.tooltip": "Etkinleştirildiğinde, gün içinde stok azaldıysa atanan her yiyeceğin\nporsiyon bütçesi gerçek envanterle eşleşecek şekilde otomatik azaltılır.\nBir HUD mesajı yapılan ayarı onaylayacaktır.\n\nDevre dışı bırakıldığında yalnızca bir HUD uyarısı tetiklenir ve açık\nasitler Lunch Pail arayüzünde kırmızıyla vurgulanır; böylece manuel olarak ayarlayabilirsiniz.",
+  "config.autoAdjustBudget.tooltip": "Etkinleştirildiğinde, gün içinde stok azaldıysa atanan her yiyeceğin\nporsiyon bütçesi gerçek envanterle eşleşecek şekilde otomatik azaltılır.\nBir HUD mesajı yapılan ayarı onaylayacaktır.\n\nDevre dışı bırakıldığında yalnızca bir HUD uyarısı tetiklenir ve açık\nsatırlar Lunch Pail arayüzünde kırmızıyla vurgulanır; böylece manuel olarak ayarlayabilirsiniz.",
 
   "config.openLunchPailKey.name": "Lunch Pail'i Aç",
   "config.openLunchPailKey.tooltip": "Lunch Pail yönetim arayüzünü açmak için tuş ataması."
