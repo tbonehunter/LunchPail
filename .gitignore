@@ -23,3 +23,6 @@ project.lock.json
 # OS
 Thumbs.db
 .DS_Store
+
+# Session / working notes
+Session Notes/
