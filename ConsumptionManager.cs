@@ -18,6 +18,16 @@ namespace TBoneHunter.LunchPail
     public class ConsumptionManager
     {
         // ----------------------------------------------------------------
+        // Compartment prefix constants
+        // ----------------------------------------------------------------
+
+        /// <summary>Prefix for stamina compartment keys in the consumed-today dictionary.</summary>
+        public const string StaminaPrefix = "S";
+
+        /// <summary>Prefix for health compartment keys in the consumed-today dictionary.</summary>
+        public const string HealthPrefix = "H";
+
+        // ----------------------------------------------------------------
         // Private state
         // ----------------------------------------------------------------
 
@@ -25,7 +35,7 @@ namespace TBoneHunter.LunchPail
         private readonly Func<Config> _config;
         private readonly Func<LunchPailData> _data;
 
-        // Per-day consumption counters keyed by "ItemId_Quality".
+        // Per-day consumption counters keyed by "S_ItemId_Quality" or "H_ItemId_Quality".
         // Incremented on each auto-consume; cleared each morning by ResetSession.
         private readonly Dictionary<string, int> _consumedToday = new();
 
@@ -106,7 +116,7 @@ namespace TBoneHunter.LunchPail
 
         private void CheckStamina(Farmer player, LunchPailData data, Config config)
         {
-            var foods = ResolveFoods(player, data.StaminaCompartment, byStamina: true, config);
+            var foods = ResolveFoods(player, data.StaminaCompartment, byStamina: true, config, StaminaPrefix);
 
             if (foods.Count > 0)
             {
@@ -114,7 +124,7 @@ namespace TBoneHunter.LunchPail
                 if (FoodHelper.ShouldTriggerStamina(next, player, config.StaminaTargetFill, config.UseStaminaFloor))
                 {
                     FoodHelper.SilentConsume(next, player);
-                    RecordConsumptionByItem(next, data.StaminaCompartment);
+                    RecordConsumptionByItem(next, data.StaminaCompartment, StaminaPrefix);
                     _monitor.Log($"[LunchPail] Auto-consumed {next.DisplayName} for stamina.", LogLevel.Trace);
 
                     // Warn once if stamina supply is now low
@@ -129,7 +139,7 @@ namespace TBoneHunter.LunchPail
             }
 
             // Primary stamina compartment empty — attempt fallback to health compartment
-            var fallbackFoods = ResolveFoods(player, data.HealthCompartment, byStamina: true, config);
+            var fallbackFoods = ResolveFoods(player, data.HealthCompartment, byStamina: true, config, HealthPrefix);
 
             if (fallbackFoods.Count == 0)
             {
@@ -153,7 +163,7 @@ namespace TBoneHunter.LunchPail
             }
 
             FoodHelper.SilentConsume(fallbackNext, player);
-            RecordConsumptionByItem(fallbackNext, data.HealthCompartment);
+            RecordConsumptionByItem(fallbackNext, data.HealthCompartment, HealthPrefix);
             _monitor.Log($"[LunchPail] Fallback stamina consume: {fallbackNext.DisplayName}.", LogLevel.Trace);
 
             // Warn once if the fallback compartment is also running low
@@ -171,7 +181,7 @@ namespace TBoneHunter.LunchPail
 
         private void CheckHealth(Farmer player, LunchPailData data, Config config)
         {
-            var foods = ResolveFoods(player, data.HealthCompartment, byStamina: false, config);
+            var foods = ResolveFoods(player, data.HealthCompartment, byStamina: false, config, HealthPrefix);
 
             if (foods.Count > 0)
             {
@@ -179,7 +189,7 @@ namespace TBoneHunter.LunchPail
                 if (FoodHelper.ShouldTriggerHealth(next, player, config.HealthTargetFill, config.UseHealthFloor))
                 {
                     FoodHelper.SilentConsume(next, player);
-                    RecordConsumptionByItem(next, data.HealthCompartment);
+                    RecordConsumptionByItem(next, data.HealthCompartment, HealthPrefix);
                     _monitor.Log($"[LunchPail] Auto-consumed {next.DisplayName} for health.", LogLevel.Trace);
 
                     // Warn once if health supply is now low
@@ -194,7 +204,7 @@ namespace TBoneHunter.LunchPail
             }
 
             // Primary health compartment empty — attempt fallback to stamina compartment
-            var fallbackFoods = ResolveFoods(player, data.StaminaCompartment, byStamina: false, config);
+            var fallbackFoods = ResolveFoods(player, data.StaminaCompartment, byStamina: false, config, StaminaPrefix);
 
             if (fallbackFoods.Count == 0)
             {
@@ -218,7 +228,7 @@ namespace TBoneHunter.LunchPail
             }
 
             FoodHelper.SilentConsume(fallbackNext, player);
-            RecordConsumptionByItem(fallbackNext, data.StaminaCompartment);
+            RecordConsumptionByItem(fallbackNext, data.StaminaCompartment, StaminaPrefix);
             _monitor.Log($"[LunchPail] Fallback health consume: {fallbackNext.DisplayName}.", LogLevel.Trace);
 
             // Warn once if the fallback compartment is also running low
@@ -242,13 +252,14 @@ namespace TBoneHunter.LunchPail
             Farmer player,
             List<LunchPailData.FoodTag> tags,
             bool byStamina,
-            Config config)
+            Config config,
+            string compartmentPrefix)
         {
             var found = new List<SObject>();
             foreach (var tag in tags)
             {
                 // Skip this tag if today's consumption budget has been reached.
-                if (IsBudgetExhausted(tag)) continue;
+                if (IsBudgetExhausted(tag, compartmentPrefix)) continue;
 
                 var item = FoodHelper.FindTaggedItemInInventory(player, tag);
                 if (item != null && FoodHelper.IsEdible(item))
@@ -258,25 +269,35 @@ namespace TBoneHunter.LunchPail
         }
 
         /// <summary>
-        /// Returns how many times the given tag has been auto-consumed today.
-        /// Used by LunchPailUI to flag rows where actual inventory has fallen
-        /// below the remaining daily budget.
+        /// Returns how many times the given tag has been auto-consumed today
+        /// within the specified compartment. The compartmentPrefix ("S" or "H")
+        /// ensures stamina and health counts are tracked independently.
         /// </summary>
-        public int GetConsumedToday(LunchPailData.FoodTag tag) =>
-            _consumedToday.GetValueOrDefault(GetTagKey(tag));
+        public int GetConsumedToday(LunchPailData.FoodTag tag, string compartmentPrefix) =>
+            _consumedToday.GetValueOrDefault(GetTagKey(tag, compartmentPrefix));
 
         /// <summary>
         /// Returns true when the given tag's item is currently in a deficit state
         /// (actual inventory below combined remaining budget). Used by LunchPailUI
         /// to highlight deficit rows in alert-only mode.
+        /// Deficit tracking uses the base item key (no compartment prefix) because
+        /// deficits are about total physical inventory vs. total combined budget.
         /// </summary>
         public bool IsInDeficit(LunchPailData.FoodTag tag) =>
-            _deficitNotified.Contains(GetTagKey(tag));
+            _deficitNotified.Contains(GetBaseTagKey(tag));
 
         /// <summary>
-        /// Returns a stable string key for a FoodTag, used to key the consumed-today dictionary.
+        /// Returns a compartment-aware string key for a FoodTag, used to key the
+        /// consumed-today dictionary. Format: "S_ItemId_Quality" or "H_ItemId_Quality".
         /// </summary>
-        private static string GetTagKey(LunchPailData.FoodTag tag) =>
+        private static string GetTagKey(LunchPailData.FoodTag tag, string compartmentPrefix) =>
+            compartmentPrefix + "_" + tag.ItemId + "_" + tag.Quality;
+
+        /// <summary>
+        /// Returns the base (non-compartment-aware) key for a FoodTag.
+        /// Used for deficit tracking which aggregates across both compartments.
+        /// </summary>
+        private static string GetBaseTagKey(LunchPailData.FoodTag tag) =>
             tag.ItemId + "_" + tag.Quality;
 
         /// <summary>
@@ -289,6 +310,8 @@ namespace TBoneHunter.LunchPail
         {
             // Aggregate remaining budget per unique item key across both compartments.
             // Keep per-compartment tag lists so auto-adjust can reduce them independently.
+            // Deficit tracking uses the base key (no prefix) because it's about total
+            // physical inventory vs. total combined budget across both compartments.
             var byKey = new Dictionary<string, (
                 int totalRemaining,
                 LunchPailData.FoodTag sampleTag,
@@ -298,12 +321,13 @@ namespace TBoneHunter.LunchPail
             foreach (bool isStamina in new[] { true, false })
             {
                 var compartment = isStamina ? data.StaminaCompartment : data.HealthCompartment;
+                string prefix = isStamina ? StaminaPrefix : HealthPrefix;
                 foreach (var tag in compartment)
                 {
                     if (tag.MaxServings == int.MaxValue) continue;
 
-                    var key      = GetTagKey(tag);
-                    int consumed  = _consumedToday.GetValueOrDefault(key);
+                    var key      = GetBaseTagKey(tag);
+                    int consumed  = _consumedToday.GetValueOrDefault(GetTagKey(tag, prefix));
                     int remaining = tag.MaxServings - consumed;
                     if (remaining <= 0) continue;
 
@@ -419,11 +443,15 @@ namespace TBoneHunter.LunchPail
         {
             if (reduction <= 0) return;
 
+            // Determine the compartment prefix for consumed-today lookups.
+            string prefix = ReferenceEquals(compartment, _data().StaminaCompartment)
+                ? StaminaPrefix : HealthPrefix;
+
             var toRemove = new List<LunchPailData.FoodTag>();
             foreach (var tag in tags)
             {
                 if (reduction <= 0) break;
-                int consumed         = _consumedToday.GetValueOrDefault(GetTagKey(tag));
+                int consumed         = _consumedToday.GetValueOrDefault(GetTagKey(tag, prefix));
                 int currentRemaining = tag.MaxServings - consumed;
                 int canReduce        = Math.Max(0, Math.Min(currentRemaining, reduction));
                 int maxBefore        = tag.MaxServings;
@@ -431,7 +459,7 @@ namespace TBoneHunter.LunchPail
                 reduction           -= canReduce;
 
                 _monitor.Log(
-                    $"[LunchPail][BudgetReduction] {tag.DisplayName} key={GetTagKey(tag)} MaxServings {maxBefore}->{tag.MaxServings} " +
+                    $"[LunchPail][BudgetReduction] {tag.DisplayName} key={GetTagKey(tag, prefix)} MaxServings {maxBefore}->{tag.MaxServings} " +
                     $"(consumed={consumed} currentRemaining={currentRemaining} canReduce={canReduce} reductionLeft={reduction})",
                     LogLevel.Debug);
 
@@ -442,7 +470,7 @@ namespace TBoneHunter.LunchPail
             foreach (var tag in toRemove)
             {
                 _monitor.Log(
-                    $"[LunchPail][BudgetReduction] Removing zeroed tag: {tag.DisplayName} key={GetTagKey(tag)}",
+                    $"[LunchPail][BudgetReduction] Removing zeroed tag: {tag.DisplayName} key={GetTagKey(tag, prefix)}",
                     LogLevel.Debug);
                 compartment.Remove(tag);
             }
@@ -452,23 +480,23 @@ namespace TBoneHunter.LunchPail
         /// Returns true if the tag's daily consumption budget is fully used.
         /// Tags with MaxServings == int.MaxValue are never exhausted.
         /// </summary>
-        private bool IsBudgetExhausted(LunchPailData.FoodTag tag)
+        private bool IsBudgetExhausted(LunchPailData.FoodTag tag, string compartmentPrefix)
         {
             if (tag.MaxServings == int.MaxValue) return false;
-            return _consumedToday.GetValueOrDefault(GetTagKey(tag)) >= tag.MaxServings;
+            return _consumedToday.GetValueOrDefault(GetTagKey(tag, compartmentPrefix)) >= tag.MaxServings;
         }
 
         /// <summary>
         /// Finds the tag in <paramref name="compartment"/> matching <paramref name="item"/>
-        /// and increments its consumed-today counter.
+        /// and increments its compartment-specific consumed-today counter.
         /// </summary>
-        private void RecordConsumptionByItem(SObject item, List<LunchPailData.FoodTag> compartment)
+        private void RecordConsumptionByItem(SObject item, List<LunchPailData.FoodTag> compartment, string compartmentPrefix)
         {
             var tag = compartment.FirstOrDefault(t =>
                 t.ItemId == item.QualifiedItemId && t.Quality == item.Quality);
             if (tag == null || tag.MaxServings == int.MaxValue) return;
 
-            var key = GetTagKey(tag);
+            var key = GetTagKey(tag, compartmentPrefix);
             _consumedToday[key] = _consumedToday.GetValueOrDefault(key) + 1;
         }
 

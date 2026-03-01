@@ -132,7 +132,7 @@ namespace TBoneHunter.LunchPail
             {
                 foreach (var (tag, item) in staminaPairs.Select(p => (p.tag, p.item!)))
                 {
-                    int consumed = _consumptionManager.GetConsumedToday(tag);
+                    int consumed = _consumptionManager.GetConsumedToday(tag, ConsumptionManager.StaminaPrefix);
                     int remainingBudget = tag.MaxServings - consumed;
                     int displayCount = tag.MaxServings == int.MaxValue ? item.Stack : Math.Min(Math.Max(0, remainingBudget), item.Stack);
                     string maxStr = tag.MaxServings == int.MaxValue ? "unlimited" : tag.MaxServings.ToString();
@@ -160,7 +160,7 @@ namespace TBoneHunter.LunchPail
             {
                 foreach (var (tag, item) in healthPairs.Select(p => (p.tag, p.item!)))
                 {
-                    int consumed = _consumptionManager.GetConsumedToday(tag);
+                    int consumed = _consumptionManager.GetConsumedToday(tag, ConsumptionManager.HealthPrefix);
                     int remainingBudget = tag.MaxServings - consumed;
                     int displayCount = tag.MaxServings == int.MaxValue ? item.Stack : Math.Min(Math.Max(0, remainingBudget), item.Stack);
                     string maxStr = tag.MaxServings == int.MaxValue ? "unlimited" : tag.MaxServings.ToString();
@@ -229,16 +229,16 @@ namespace TBoneHunter.LunchPail
             DrawPanel(b, centerPanel, Color.Gray * 0.2f, "Inventory");
             DrawPanel(b, healthPanel, Color.Crimson * 0.3f, "Health");
 
-            // Item lists
-            DrawItemList(b, _staminaFoods, _staminaTags, staminaPanel);
+            // Item lists — pass compartment prefix so consumed counts are correct
+            DrawItemList(b, _staminaFoods, _staminaTags, staminaPanel, ConsumptionManager.StaminaPrefix);
             DrawUnassignedList(b, _unassignedFoods, centerPanel);
-            DrawItemList(b, _healthFoods, _healthTags, healthPanel);
+            DrawItemList(b, _healthFoods, _healthTags, healthPanel, ConsumptionManager.HealthPrefix);
 
             // Log all three panels once per UI open, after every panel has been drawn.
             if (!_hasLoggedDraw)
             {
-                LogPanelDraw("Stamina", _staminaFoods, _staminaTags);
-                LogPanelDraw("Health",  _healthFoods,  _healthTags);
+                LogPanelDraw("Stamina", _staminaFoods, _staminaTags, ConsumptionManager.StaminaPrefix);
+                LogPanelDraw("Health",  _healthFoods,  _healthTags,  ConsumptionManager.HealthPrefix);
                 _hasLoggedDraw = true;
             }
 
@@ -517,9 +517,13 @@ namespace TBoneHunter.LunchPail
         /// <param name="tags">
         /// Parallel tag list matching <paramref name="items"/>; used to render the serving budget.
         /// </param>
+        /// <param name="compartmentPrefix">
+        /// "S" or "H" — passed to GetConsumedToday so each compartment's
+        /// consumption count is queried independently.
+        /// </param>
         private void DrawItemList(
             SpriteBatch b, List<SObject> items, List<LunchPailData.FoodTag> tags,
-            Rectangle panel)
+            Rectangle panel, string compartmentPrefix)
         {
             for (int i = 0; i < items.Count; i++)
             {
@@ -550,7 +554,7 @@ namespace TBoneHunter.LunchPail
                 // When MaxServings is unlimited, the effective quantity is the full live stack.
                 // When explicit, subtract today's consumption from the budget before clamping
                 // to the live stack so the display reflects remaining servings, not original budget.
-                int consumed = _consumptionManager.GetConsumedToday(tag);
+                int consumed = _consumptionManager.GetConsumedToday(tag, compartmentPrefix);
                 int remainingBudget = tag.MaxServings - consumed;
                 int displayCount = tag.MaxServings == int.MaxValue
                     ? item.Stack
@@ -570,20 +574,21 @@ namespace TBoneHunter.LunchPail
         /// once per UI open after all panels have been drawn, so all three panels
         /// are captured before the guard flag is set.
         /// </summary>
-        private void LogPanelDraw(string panelName, List<SObject> items, List<LunchPailData.FoodTag> tags)
+        private void LogPanelDraw(string panelName, List<SObject> items,
+            List<LunchPailData.FoodTag> tags, string compartmentPrefix)
         {
             for (int i = 0; i < items.Count; i++)
             {
                 var item = items[i];
                 var tag  = tags[i];
-                int consumed = _consumptionManager.GetConsumedToday(tag);
+                int consumed = _consumptionManager.GetConsumedToday(tag, compartmentPrefix);
                 int remainingBudget = tag.MaxServings - consumed;
                 int displayCount = tag.MaxServings == int.MaxValue
                     ? item.Stack
                     : Math.Min(Math.Max(0, remainingBudget), item.Stack);
                 string maxStr = tag.MaxServings == int.MaxValue ? "unlimited" : tag.MaxServings.ToString();
                 _monitor.Log(
-                    $"[LunchPailUI][Draw][{panelName}] Rendered: '{item.DisplayName} (\u00d7{displayCount})' | MaxServings={maxStr} Stack={item.Stack} Consumed={consumed}",
+                    $"[LunchPailUI][Draw][{panelName}] Rendered: '{item.DisplayName} (×{displayCount})' | MaxServings={maxStr} Stack={item.Stack} Consumed={consumed}",
                     LogLevel.Debug);
             }
         }
