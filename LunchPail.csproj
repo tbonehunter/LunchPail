@@ -14,6 +14,7 @@
     <None Remove=".gitignore" />
     <None Remove="BUGFIX_INSTRUCTIONS.md" />
     <None Remove="DESIGN_NOTES.md" />
+    <None Remove="i18n.zip" />
     <None Remove="item list from console commands.txt" />
     <None Remove="kitchek coordinates.txt" />
     <None Remove="Lunch Pail Test.txt" />
@@ -33,6 +34,12 @@
     <Content Include="i18n\**">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="Session Notes\**" />
+    <EmbeddedResource Remove="Session Notes\**" />
+    <None Remove="Session Notes\**" />
   </ItemGroup>
 
   <ItemGroup>
