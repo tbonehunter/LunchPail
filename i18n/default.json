@@ -1,0 +1,41 @@
+{
+  // i18n/default.json — LunchPail default (English) translations
+
+  // ── Section titles ────────────────────────────────────────────────────────
+  "config.section.stamina": "Stamina Compartment",
+  "config.section.health": "Health Compartment",
+  "config.section.foodSelection": "Food Selection",
+  "config.section.budgetAdjustment": "Budget Adjustment",
+  "config.section.controls": "Controls",
+
+  // ── Stamina Target Fill ───────────────────────────────────────────────────
+  "config.staminaTargetFill.name": "Stamina Target Fill (%)",
+  "config.staminaTargetFill.tooltip": "Auto-consume stamina food when eating it would restore your stamina\nto at least this percentage of full.\nExample: 90 means eat when stamina is low enough that the food\nwould bring you back to 90% or more of full.\n\nNote: if the food's restore value exceeds this target, the trigger\npoint becomes 0% (never fires from this setting alone).\nEnable 'Use Base Stamina Level' below to protect against that case.",
+
+  // ── Use Base Stamina Level ────────────────────────────────────────────────
+  "config.useStaminaFloor.name": "Use Base Stamina Level",
+  "config.useStaminaFloor.tooltip": "Never lets your Stamina drop below 25% without consuming food,\nto avoid exhaustion from sudden depletion.\nThis fires regardless of the food's restore value and overrides\nthe Target Fill setting when stamina is critically low.",
+
+  // ── Health Target Fill ────────────────────────────────────────────────────
+  "config.healthTargetFill.name": "Health Target Fill (%)",
+  "config.healthTargetFill.tooltip": "Auto-consume health food when eating it would restore your health\nto at least this percentage of full.\nExample: 90 means eat when health is low enough that the food\nwould bring you back to 90% or more of full.\n\nNote: if the food's restore value exceeds this target, the trigger\npoint becomes 0% (never fires from this setting alone).\nEnable 'Use Base Health Level' below to protect against that case.",
+
+  // ── Use Base Health Level ─────────────────────────────────────────────────
+  "config.useHealthFloor.name": "Use Base Health Level",
+  "config.useHealthFloor.tooltip": "Never lets your Health drop below 25% without consuming food,\nto avoid death from sudden depletion.\nThis fires regardless of the food's restore value and overrides\nthe Target Fill setting when health is critically low.",
+
+  // ── Consumption Order ─────────────────────────────────────────────────────
+  "config.sortOrder.name": "Consumption Order",
+  "config.sortOrder.tooltip": "Determines which food is consumed first within each compartment.\nLowest First: conserves best food for emergencies (recommended).\nHighest First: maximizes immediate restore value.\nRandom: shuffles each time.",
+  "config.sortOrder.lowestFirst": "Lowest First",
+  "config.sortOrder.highestFirst": "Highest First",
+  "config.sortOrder.random": "Random",
+
+  // ── Auto-adjust daily budget ──────────────────────────────────────────────
+  "config.autoAdjustBudget.name": "Auto-adjust daily budget",
+  "config.autoAdjustBudget.tooltip": "When enabled, the serving budget for each assigned food is automatically\nreduced to match your actual inventory if supply has dropped mid-day.\nA HUD message will confirm the adjustment was made.\n\nWhen disabled, only a HUD alert fires and deficit rows are highlighted\nin red inside the Lunch Pail UI so you can adjust manually.",
+
+  // ── Open Lunch Pail keybind ───────────────────────────────────────────────
+  "config.openLunchPailKey.name": "Open Lunch Pail",
+  "config.openLunchPailKey.tooltip": "Keybind to open the Lunch Pail management UI."
+}

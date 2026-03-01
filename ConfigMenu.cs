@@ -31,6 +31,8 @@ namespace TBoneHunter.LunchPail
             if (gmcm is null)
                 return;
 
+            var t = helper.Translation;
+
             gmcm.Register(
                 mod: manifest,
                 reset: () => saveConfig(new Config()),
@@ -43,20 +45,13 @@ namespace TBoneHunter.LunchPail
 
             gmcm.AddSectionTitle(
                 mod: manifest,
-                text: () => "Stamina Compartment"
+                text: () => t.Get("config.section.stamina")
             );
 
             gmcm.AddNumberOption(
                 mod: manifest,
-                name: () => "Stamina Target Fill (%)",
-                tooltip: () =>
-                    "Auto-consume stamina food when eating it would restore your stamina\n" +
-                    "to at least this percentage of full.\n" +
-                    "Example: 90 means eat when stamina is low enough that the food\n" +
-                    "would bring you back to 90% or more of full.\n\n" +
-                    "Note: if the food's restore value exceeds this target, the trigger\n" +
-                    "point becomes 0% (never fires from this setting alone).\n" +
-                    "Enable 'Use Base Stamina Level' below to protect against that case.",
+                name: () => t.Get("config.staminaTargetFill.name"),
+                tooltip: () => t.Get("config.staminaTargetFill.tooltip"),
                 getValue: () => getConfig().StaminaTargetFill,
                 setValue: val => getConfig().StaminaTargetFill = val,
                 min: 1,
@@ -66,12 +61,8 @@ namespace TBoneHunter.LunchPail
 
             gmcm.AddBoolOption(
                 mod: manifest,
-                name: () => "Use Base Stamina Level",
-                tooltip: () =>
-                    "Never lets your Stamina drop below 25% without consuming food,\n" +
-                    "to avoid exhaustion from sudden depletion.\n" +
-                    "This fires regardless of the food's restore value and overrides\n" +
-                    "the Target Fill setting when stamina is critically low.",
+                name: () => t.Get("config.useStaminaFloor.name"),
+                tooltip: () => t.Get("config.useStaminaFloor.tooltip"),
                 getValue: () => getConfig().UseStaminaFloor,
                 setValue: val => getConfig().UseStaminaFloor = val
             );
@@ -82,20 +73,13 @@ namespace TBoneHunter.LunchPail
 
             gmcm.AddSectionTitle(
                 mod: manifest,
-                text: () => "Health Compartment"
+                text: () => t.Get("config.section.health")
             );
 
             gmcm.AddNumberOption(
                 mod: manifest,
-                name: () => "Health Target Fill (%)",
-                tooltip: () =>
-                    "Auto-consume health food when eating it would restore your health\n" +
-                    "to at least this percentage of full.\n" +
-                    "Example: 90 means eat when health is low enough that the food\n" +
-                    "would bring you back to 90% or more of full.\n\n" +
-                    "Note: if the food's restore value exceeds this target, the trigger\n" +
-                    "point becomes 0% (never fires from this setting alone).\n" +
-                    "Enable 'Use Base Health Level' below to protect against that case.",
+                name: () => t.Get("config.healthTargetFill.name"),
+                tooltip: () => t.Get("config.healthTargetFill.tooltip"),
                 getValue: () => getConfig().HealthTargetFill,
                 setValue: val => getConfig().HealthTargetFill = val,
                 min: 1,
@@ -105,12 +89,8 @@ namespace TBoneHunter.LunchPail
 
             gmcm.AddBoolOption(
                 mod: manifest,
-                name: () => "Use Base Health Level",
-                tooltip: () =>
-                    "Never lets your Health drop below 25% without consuming food,\n" +
-                    "to avoid death from sudden depletion.\n" +
-                    "This fires regardless of the food's restore value and overrides\n" +
-                    "the Target Fill setting when health is critically low.",
+                name: () => t.Get("config.useHealthFloor.name"),
+                tooltip: () => t.Get("config.useHealthFloor.tooltip"),
                 getValue: () => getConfig().UseHealthFloor,
                 setValue: val => getConfig().UseHealthFloor = val
             );
@@ -121,25 +101,21 @@ namespace TBoneHunter.LunchPail
 
             gmcm.AddSectionTitle(
                 mod: manifest,
-                text: () => "Food Selection"
+                text: () => t.Get("config.section.foodSelection")
             );
 
             gmcm.AddTextOption(
                 mod: manifest,
-                name: () => "Consumption Order",
-                tooltip: () =>
-                    "Determines which food is consumed first within each compartment.\n" +
-                    "Lowest First: conserves best food for emergencies (recommended).\n" +
-                    "Highest First: maximizes immediate restore value.\n" +
-                    "Random: shuffles each time.",
+                name: () => t.Get("config.sortOrder.name"),
+                tooltip: () => t.Get("config.sortOrder.tooltip"),
                 getValue: () => getConfig().SortOrder.ToString(),
                 setValue: val => getConfig().SortOrder = Enum.Parse<FoodSortOrder>(val),
                 allowedValues: new[] { "LowestFirst", "HighestFirst", "Random" },
                 formatAllowedValue: val => val switch
                 {
-                    "LowestFirst"  => "Lowest First",
-                    "HighestFirst" => "Highest First",
-                    "Random"       => "Random",
+                    "LowestFirst"  => t.Get("config.sortOrder.lowestFirst"),
+                    "HighestFirst" => t.Get("config.sortOrder.highestFirst"),
+                    "Random"       => t.Get("config.sortOrder.random"),
                     _              => val
                 }
             );
@@ -150,18 +126,13 @@ namespace TBoneHunter.LunchPail
 
             gmcm.AddSectionTitle(
                 mod: manifest,
-                text: () => "Budget Adjustment"
+                text: () => t.Get("config.section.budgetAdjustment")
             );
 
             gmcm.AddBoolOption(
                 mod: manifest,
-                name: () => "Auto-adjust daily budget",
-                tooltip: () =>
-                    "When enabled, the serving budget for each assigned food is automatically\n" +
-                    "reduced to match your actual inventory if supply has dropped mid-day.\n" +
-                    "A HUD message will confirm the adjustment was made.\n\n" +
-                    "When disabled, only a HUD alert fires and deficit rows are highlighted\n" +
-                    "in red inside the Lunch Pail UI so you can adjust manually.",
+                name: () => t.Get("config.autoAdjustBudget.name"),
+                tooltip: () => t.Get("config.autoAdjustBudget.tooltip"),
                 getValue: () => getConfig().AutoAdjustBudget,
                 setValue: val => getConfig().AutoAdjustBudget = val
             );
@@ -172,13 +143,13 @@ namespace TBoneHunter.LunchPail
 
             gmcm.AddSectionTitle(
                 mod: manifest,
-                text: () => "Controls"
+                text: () => t.Get("config.section.controls")
             );
 
             gmcm.AddKeybindList(
                 mod: manifest,
-                name: () => "Open Lunch Pail",
-                tooltip: () => "Keybind to open the Lunch Pail management UI.",
+                name: () => t.Get("config.openLunchPailKey.name"),
+                tooltip: () => t.Get("config.openLunchPailKey.tooltip"),
                 getValue: () => getConfig().OpenLunchPailKey,
                 setValue: val => getConfig().OpenLunchPailKey = val
             );
