@@ -1,0 +1,33 @@
+{
+  // i18n/es.json — LunchPail Spanish translations
+
+  "config.section.stamina": "Compartimento de Energía",
+  "config.section.health": "Compartimento de Salud",
+  "config.section.foodSelection": "Selección de Alimentos",
+  "config.section.budgetAdjustment": "Ajuste de Presupuesto",
+  "config.section.controls": "Controles",
+
+  "config.staminaTargetFill.name": "Llenado Objetivo de Energía (%)",
+  "config.staminaTargetFill.tooltip": "Consume automáticamente alimentos de energía cuando comerlos restauraría\ntu energía al menos a este porcentaje del máximo.\nEjemplo: 90 significa comer cuando la energía esté tan baja que el alimento\nte lleve de vuelta al 90 % o más del máximo.\n\nNota: si el valor de restauración supera este objetivo, el punto de activación\nse vuelve 0 % (este ajuste solo nunca se activa).\nActiva 'Usar nivel base de energía' para protegerte de ese caso.",
+
+  "config.useStaminaFloor.name": "Usar Nivel Base de Energía",
+  "config.useStaminaFloor.tooltip": "Nunca deja que tu Energía caiga por debajo del 25 % sin consumir alimento,\npara evitar el agotamiento por una pérdida repentina.\nEsto se activa independientemente del valor de restauración del alimento\ny anula el ajuste de llenado objetivo cuando la energía está críticamente baja.",
+
+  "config.healthTargetFill.name": "Llenado Objetivo de Salud (%)",
+  "config.healthTargetFill.tooltip": "Consume automáticamente alimentos de salud cuando comerlos restauraría\ntu salud al menos a este porcentaje del máximo.\nEjemplo: 90 significa comer cuando la salud esté tan baja que el alimento\nte lleve de vuelta al 90 % o más del máximo.\n\nNota: si el valor de restauración supera este objetivo, el punto de activación\nse vuelve 0 % (este ajuste solo nunca se activa).\nActiva 'Usar nivel base de salud' para protegerte de ese caso.",
+
+  "config.useHealthFloor.name": "Usar Nivel Base de Salud",
+  "config.useHealthFloor.tooltip": "Nunca deja que tu Salud caiga por debajo del 25 % sin consumir alimento,\npara evitar la muerte por una pérdida repentina.\nEsto se activa independientemente del valor de restauración del alimento\ny anula el ajuste de llenado objetivo cuando la salud está críticamente baja.",
+
+  "config.sortOrder.name": "Orden de Consumo",
+  "config.sortOrder.tooltip": "Determina qué alimento se consume primero en cada compartimento.\nMenor primero: conserva el mejor alimento para emergencias (recomendado).\nMayor primero: maximiza el valor de restauración inmediato.\nAleatorio: mezcla cada vez.",
+  "config.sortOrder.lowestFirst": "Menor primero",
+  "config.sortOrder.highestFirst": "Mayor primero",
+  "config.sortOrder.random": "Aleatorio",
+
+  "config.autoAdjustBudget.name": "Ajustar presupuesto diario automáticamente",
+  "config.autoAdjustBudget.tooltip": "Cuando está activado, el presupuesto de porciones para cada alimento asignado\nse reduce automáticamente si el suministro ha bajado durante el día.\nUn mensaje en el HUD confirmará el ajuste realizado.\n\nCuando está desactivado, solo se emite una alerta en el HUD y las filas con\ndéficit se resaltan en rojo en la interfaz de la Lunchpail para ajuste manual.",
+
+  "config.openLunchPailKey.name": "Abrir Lunchpail",
+  "config.openLunchPailKey.tooltip": "Tecla de acceso rápido para abrir la interfaz de gestión de la Lunchpail."
+}

@@ -1,0 +1,33 @@
+{
+  // i18n/tr.json — LunchPail Turkish translations
+
+  "config.section.stamina": "Stamina Bölmesi",
+  "config.section.health": "Sağlık Bölmesi",
+  "config.section.foodSelection": "Yiyecek Seçimi",
+  "config.section.budgetAdjustment": "Bütçe Ayarı",
+  "config.section.controls": "Kontroller",
+
+  "config.staminaTargetFill.name": "Stamina Hedef Dolum Oranı (%)",
+  "config.staminaTargetFill.tooltip": "Yemek yemeniz stamina'nızı en az bu yüzdeye kadar geri yüklediğinde\nstamina yiyeceği otomatik olarak tüketir.\nÖrnek: 90, yiyeceğin sizi maksimumun %90 veya daha fazlasına\ngeri getirebilecek kadar stamina düşükken yemek anlamına gelir.\n\nNot: Yiyeceğin geri yükleme değeri bu hedefi aşarsa,\ntetikleme noktası %0 olur (bu ayar tek başına hiçbir zaman tetiklenmez).\nBu duruma karşı koruma için aşağıdaki 'Temel Stamina Seviyesini Kullan'ı etkinleştirin.",
+
+  "config.useStaminaFloor.name": "Temel Stamina Seviyesini Kullan",
+  "config.useStaminaFloor.tooltip": "Ani tükenme nedeniyle bitkinliği önlemek için\nyiyecek tüketmeden stamina'nın %25'in altına düşmesine izin vermez.\nBu, yiyeceğin geri yükleme değerinden bağımsız olarak tetiklenir\nve stamina kritik derecede düşük olduğunda hedef dolum ayarını geçersiz kılar.",
+
+  "config.healthTargetFill.name": "Sağlık Hedef Dolum Oranı (%)",
+  "config.healthTargetFill.tooltip": "Yemek yemeniz sağlığınızı en az bu yüzdeye kadar geri yüklediğinde\nsağlık yiyeceği otomatik olarak tüketir.\nÖrnek: 90, yiyeceğin sizi maksimumun %90 veya daha fazlasına\ngeri getirebilecek kadar sağlık düşükken yemek anlamına gelir.\n\nNot: Yiyeceğin geri yükleme değeri bu hedefi aşarsa,\ntetikleme noktası %0 olur (bu ayar tek başına hiçbir zaman tetiklenmez).\nBu duruma karşı koruma için aşağıdaki 'Temel Sağlık Seviyesini Kullan'ı etkinleştirin.",
+
+  "config.useHealthFloor.name": "Temel Sağlık Seviyesini Kullan",
+  "config.useHealthFloor.tooltip": "Ani tükenme nedeniyle ölümü önlemek için\nyiyecek tüketmeden sağlığın %25'in altına düşmesine izin vermez.\nBu, yiyeceğin geri yükleme değerinden bağımsız olarak tetiklenir\nve sağlık kritik derecede düşük olduğunda hedef dolum ayarını geçersiz kılar.",
+
+  "config.sortOrder.name": "Tüketim Sırası",
+  "config.sortOrder.tooltip": "Her bölmede hangi yiyeceğin önce tüketileceğini belirler.\nEn düşük önce: En iyi yiyeceği acil durumlar için saklar (önerilir).\nEn yüksek önce: Anlık geri yükleme değerini maksimize eder.\nRastgele: Her seferinde karıştırır.",
+  "config.sortOrder.lowestFirst": "En düşük önce",
+  "config.sortOrder.highestFirst": "En yüksek önce",
+  "config.sortOrder.random": "Rastgele",
+
+  "config.autoAdjustBudget.name": "Günlük bütçeyi otomatik ayarla",
+  "config.autoAdjustBudget.tooltip": "Etkinleştirildiğinde, gün içinde stok azaldıysa atanan her yiyeceğin\nporsiyon bütçesi gerçek envanterle eşleşecek şekilde otomatik azaltılır.\nBir HUD mesajı yapılan ayarı onaylayacaktır.\n\nDevre dışı bırakıldığında yalnızca bir HUD uyarısı tetiklenir ve açık\nasitler Lunch Pail arayüzünde kırmızıyla vurgulanır; böylece manuel olarak ayarlayabilirsiniz.",
+
+  "config.openLunchPailKey.name": "Lunch Pail'i Aç",
+  "config.openLunchPailKey.tooltip": "Lunch Pail yönetim arayüzünü açmak için tuş ataması."
+}

@@ -1,0 +1,33 @@
+{
+  // i18n/fr.json — LunchPail French translations
+
+  "config.section.stamina": "Compartiment Énergie",
+  "config.section.health": "Compartiment Santé",
+  "config.section.foodSelection": "Sélection des Aliments",
+  "config.section.budgetAdjustment": "Ajustement du Budget",
+  "config.section.controls": "Contrôles",
+
+  "config.staminaTargetFill.name": "Remplissage cible Énergie (%)",
+  "config.staminaTargetFill.tooltip": "Consomme automatiquement de la nourriture d'énergie lorsque la manger\nrestaurerait votre énergie à au moins ce pourcentage du maximum.\nExemple : 90 signifie manger quand l'énergie est suffisamment basse pour que\nla nourriture vous ramène à 90 % ou plus du maximum.\n\nNote : si la valeur de restauration dépasse cet objectif, le point\nd'activation devient 0 % (ce réglage seul ne se déclenche jamais).\nActivez 'Utiliser le niveau d'énergie de base' ci-dessous pour vous en protéger.",
+
+  "config.useStaminaFloor.name": "Utiliser le niveau d'énergie de base",
+  "config.useStaminaFloor.tooltip": "Ne laisse jamais votre Énergie tomber en dessous de 25 % sans consommer de nourriture,\npour éviter l'épuisement dû à une déplétion soudaine.\nCeci se déclenche quelle que soit la valeur de restauration de la nourriture\net remplace le réglage de remplissage cible quand l'énergie est critique.",
+
+  "config.healthTargetFill.name": "Remplissage cible Santé (%)",
+  "config.healthTargetFill.tooltip": "Consomme automatiquement de la nourriture de santé lorsque la manger\nrestaurerait votre santé à au moins ce pourcentage du maximum.\nExemple : 90 signifie manger quand la santé est suffisamment basse pour que\nla nourriture vous ramène à 90 % ou plus du maximum.\n\nNote : si la valeur de restauration dépasse cet objectif, le point\nd'activation devient 0 % (ce réglage seul ne se déclenche jamais).\nActivez 'Utiliser le niveau de santé de base' ci-dessous pour vous en protéger.",
+
+  "config.useHealthFloor.name": "Utiliser le niveau de santé de base",
+  "config.useHealthFloor.tooltip": "Ne laisse jamais votre Santé tomber en dessous de 25 % sans consommer de nourriture,\npour éviter la mort due à une déplétion soudaine.\nCeci se déclenche quelle que soit la valeur de restauration de la nourriture\net remplace le réglage de remplissage cible quand la santé est critique.",
+
+  "config.sortOrder.name": "Ordre de consommation",
+  "config.sortOrder.tooltip": "Détermine quelle nourriture est consommée en premier dans chaque compartiment.\nLe plus faible d'abord : conserve la meilleure nourriture pour les urgences (recommandé).\nLe plus élevé d'abord : maximise la valeur de restauration immédiate.\nAléatoire : mélange à chaque fois.",
+  "config.sortOrder.lowestFirst": "Le plus faible d'abord",
+  "config.sortOrder.highestFirst": "Le plus élevé d'abord",
+  "config.sortOrder.random": "Aléatoire",
+
+  "config.autoAdjustBudget.name": "Ajuster automatiquement le budget quotidien",
+  "config.autoAdjustBudget.tooltip": "Lorsqu'activé, le budget de portions pour chaque aliment assigné est automatiquement\nréduit pour correspondre à votre inventaire réel si le stock a baissé dans la journée.\nUn message HUD confirmera l'ajustement effectué.\n\nLorsque désactivé, seule une alerte HUD s'affiche et les lignes en déficit sont\nmises en évidence en rouge dans l'interface Lunch Pail pour un ajustement manuel.",
+
+  "config.openLunchPailKey.name": "Ouvrir Lunch Pail",
+  "config.openLunchPailKey.tooltip": "Raccourci clavier pour ouvrir l'interface de gestion du Lunch Pail."
+}

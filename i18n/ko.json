@@ -1,0 +1,33 @@
+{
+  // i18n/ko.json — LunchPail Korean translations
+
+  "config.section.stamina": "체력 칸",
+  "config.section.health": "생명력 칸",
+  "config.section.foodSelection": "음식 선택",
+  "config.section.budgetAdjustment": "수량 조정",
+  "config.section.controls": "조작 설정",
+
+  "config.staminaTargetFill.name": "체력 목표 보충량 (%)",
+  "config.staminaTargetFill.tooltip": "음식을 먹었을 때 체력이 최소 이 비율까지 회복될 경우\n체력 음식을 자동으로 소비합니다.\n예: 90은 음식을 먹으면 최대치의 90% 이상까지\n회복될 만큼 체력이 낮을 때 먹는다는 의미입니다.\n\n참고: 음식의 회복량이 이 목표를 초과하면\n발동 지점이 0%가 됩니다(이 설정 단독으로는 절대 발동되지 않습니다).\n아래의 '기본 체력 수치 사용'을 활성화하여 이를 방지하세요.",
+
+  "config.useStaminaFloor.name": "기본 체력 수치 사용",
+  "config.useStaminaFloor.tooltip": "갑작스러운 소진으로 인한 기진맥진을 방지하기 위해\n음식 소비 없이 체력이 25% 아래로 내려가지 않도록 합니다.\n이 기능은 음식의 회복량에 관계없이 발동되며,\n체력이 위험할 정도로 낮을 때 목표 보충량 설정보다 우선합니다.",
+
+  "config.healthTargetFill.name": "생명력 목표 보충량 (%)",
+  "config.healthTargetFill.tooltip": "음식을 먹었을 때 생명력이 최소 이 비율까지 회복될 경우\n생명력 음식을 자동으로 소비합니다.\n예: 90은 음식을 먹으면 최대치의 90% 이상까지\n회복될 만큼 생명력이 낮을 때 먹는다는 의미입니다.\n\n참고: 음식의 회복량이 이 목표를 초과하면\n발동 지점이 0%가 됩니다(이 설정 단독으로는 절대 발동되지 않습니다).\n아래의 '기본 생명력 수치 사용'을 활성화하여 이를 방지하세요.",
+
+  "config.useHealthFloor.name": "기본 생명력 수치 사용",
+  "config.useHealthFloor.tooltip": "갑작스러운 소진으로 인한 사망을 방지하기 위해\n음식 소비 없이 생명력이 25% 아래로 내려가지 않도록 합니다.\n이 기능은 음식의 회복량에 관계없이 발동되며,\n생명력이 위험할 정도로 낮을 때 목표 보충량 설정보다 우선합니다.",
+
+  "config.sortOrder.name": "소비 순서",
+  "config.sortOrder.tooltip": "각 칸에서 어떤 음식을 먼저 소비할지 결정합니다.\n낮은 것 먼저: 좋은 음식을 비상 상황을 위해 아껴둡니다(권장).\n높은 것 먼저: 즉각적인 회복량을 최대화합니다.\n무작위: 매번 뒤섞습니다.",
+  "config.sortOrder.lowestFirst": "낮은 것 먼저",
+  "config.sortOrder.highestFirst": "높은 것 먼저",
+  "config.sortOrder.random": "무작위",
+
+  "config.autoAdjustBudget.name": "일일 수량 자동 조정",
+  "config.autoAdjustBudget.tooltip": "활성화하면 당일 재고가 줄었을 때 각 할당된 음식의\n서빙 수량이 실제 인벤토리에 맞게 자동으로 줄어듭니다.\nHUD 메시지로 조정 완료를 확인할 수 있습니다.\n\n비활성화하면 HUD 경고만 표시되고, 부족한 행은\n도시락 UI에서 빨간색으로 강조 표시되어 수동으로 조정할 수 있습니다.",
+
+  "config.openLunchPailKey.name": "도시락 열기",
+  "config.openLunchPailKey.tooltip": "도시락 관리 UI를 여는 키 설정."
+}

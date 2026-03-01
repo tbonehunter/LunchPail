@@ -1,0 +1,33 @@
+{
+  // i18n/hu.json — LunchPail Hungarian translations
+
+  "config.section.stamina": "Állóképesség rekesz",
+  "config.section.health": "Életpont rekesz",
+  "config.section.foodSelection": "Étel kiválasztása",
+  "config.section.budgetAdjustment": "Adag beállítás",
+  "config.section.controls": "Vezérlés",
+
+  "config.staminaTargetFill.name": "Állóképesség célérték (%)",
+  "config.staminaTargetFill.tooltip": "Automatikusan fogyaszt állóképesség-ételt, ha az elfogyasztott étel\nlegalább ennyi százalékra töltené fel az állóképességet.\nPélda: 90 azt jelenti, hogy akkor eszik, ha az állóképesség annyira alacsony,\nhogy az étel a maximum 90%-ára vagy fölé vinné vissza.\n\nMegjegyzés: ha az étel visszatöltési értéke meghaladja a célt,\na kiváltási pont 0% lesz (ezzel a beállítással egyedül soha nem aktiválódik).\nAz eset megelőzésére aktiváld az 'Alap állóképesség szint használata' opciót.",
+
+  "config.useStaminaFloor.name": "Alap állóképesség szint használata",
+  "config.useStaminaFloor.tooltip": "Étel fogyasztása nélkül soha nem engedi, hogy az állóképesség 25% alá essen,\nelkerülve a kimerültséget a hirtelen elfogyás miatt.\nEz az étel visszatöltési értékétől függetlenül aktiválódik,\nés felülírja a célérték beállítást, ha az állóképesség kritikusan alacsony.",
+
+  "config.healthTargetFill.name": "Életpont célérték (%)",
+  "config.healthTargetFill.tooltip": "Automatikusan fogyaszt életpont-ételt, ha az elfogyasztott étel\nlegalább ennyi százalékra töltené fel az életpontot.\nPélda: 90 azt jelenti, hogy akkor eszik, ha az életpont annyira alacsony,\nhogy az étel a maximum 90%-ára vagy fölé vinné vissza.\n\nMegjegyzés: ha az étel visszatöltési értéke meghaladja a célt,\na kiváltási pont 0% lesz (ezzel a beállítással egyedül soha nem aktiválódik).\nAz eset megelőzésére aktiváld az 'Alap életpont szint használata' opciót.",
+
+  "config.useHealthFloor.name": "Alap életpont szint használata",
+  "config.useHealthFloor.tooltip": "Étel fogyasztása nélkül soha nem engedi, hogy az életpont 25% alá essen,\nelkerülve a halált a hirtelen elfogyás miatt.\nEz az étel visszatöltési értékétől függetlenül aktiválódik,\nés felülírja a célérték beállítást, ha az életpont kritikusan alacsony.",
+
+  "config.sortOrder.name": "Fogyasztási sorrend",
+  "config.sortOrder.tooltip": "Meghatározza, hogy melyik ételt fogyasztja el először az egyes rekeszekben.\nLegalacsonyabb először: megőrzi a legjobb ételt vészhelyzetekre (ajánlott).\nLegmagasabb először: maximalizálja az azonnali visszatöltési értéket.\nVéletlenszerű: minden alkalommal összekeveri.",
+  "config.sortOrder.lowestFirst": "Legalacsonyabb először",
+  "config.sortOrder.highestFirst": "Legmagasabb először",
+  "config.sortOrder.random": "Véletlenszerű",
+
+  "config.autoAdjustBudget.name": "Napi adag automatikus beállítása",
+  "config.autoAdjustBudget.tooltip": "Ha engedélyezve van, az egyes hozzárendelt ételek adagkerete automatikusan\ncsökken a tényleges készletnek megfelelően, ha a készlet csökkent a nap folyamán.\nEgy HUD-üzenet megerősíti az elvégzett módosítást.\n\nHa le van tiltva, csak egy HUD-figyelmeztetés jelenik meg, és a hiányos sorok\npiros kiemelést kapnak a Lunch Pail felületen, hogy manuálisan módosíthass.",
+
+  "config.openLunchPailKey.name": "Lunch Pail megnyitása",
+  "config.openLunchPailKey.tooltip": "Billentyűparancs a Lunch Pail kezelőfelület megnyitásához."
+}

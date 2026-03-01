@@ -1,0 +1,33 @@
+{
+  // i18n/zh.json — LunchPail Simplified Chinese translations
+
+  "config.section.stamina": "体力格",
+  "config.section.health": "生命格",
+  "config.section.foodSelection": "食物选择",
+  "config.section.budgetAdjustment": "份量调整",
+  "config.section.controls": "按键设置",
+
+  "config.staminaTargetFill.name": "体力目标补充率 (%)",
+  "config.staminaTargetFill.tooltip": "当食用食物后体力能恢复到至少此百分比时，\n自动消耗体力食物。\n示例：90 表示当体力足够低，吃食物后能恢复到\n最大值的90%或以上时进行食用。\n\n注意：若食物恢复量超过此目标，触发点将变为0%\n（仅凭此设置永远不会触发）。\n请启用下方的"使用体力基础值"以防止这种情况。",
+
+  "config.useStaminaFloor.name": "使用体力基础值",
+  "config.useStaminaFloor.tooltip": "在不消耗食物的情况下，体力永远不会低于25%，\n以避免因突然耗尽而导致精疲力竭。\n无论食物的恢复值如何，此功能均会触发，\n并在体力严重不足时覆盖目标补充率设置。",
+
+  "config.healthTargetFill.name": "生命目标补充率 (%)",
+  "config.healthTargetFill.tooltip": "当食用食物后生命能恢复到至少此百分比时，\n自动消耗生命食物。\n示例：90 表示当生命足够低，吃食物后能恢复到\n最大值的90%或以上时进行食用。\n\n注意：若食物恢复量超过此目标，触发点将变为0%\n（仅凭此设置永远不会触发）。\n请启用下方的"使用生命基础值"以防止这种情况。",
+
+  "config.useHealthFloor.name": "使用生命基础值",
+  "config.useHealthFloor.tooltip": "在不消耗食物的情况下，生命永远不会低于25%，\n以避免因突然耗尽而死亡。\n无论食物的恢复值如何，此功能均会触发，\n并在生命严重不足时覆盖目标补充率设置。",
+
+  "config.sortOrder.name": "消耗顺序",
+  "config.sortOrder.tooltip": "决定每个格中哪种食物优先被消耗。\n最低优先：为紧急情况保留最好的食物（推荐）。\n最高优先：最大化即时恢复值。\n随机：每次随机打乱。",
+  "config.sortOrder.lowestFirst": "最低优先",
+  "config.sortOrder.highestFirst": "最高优先",
+  "config.sortOrder.random": "随机",
+
+  "config.autoAdjustBudget.name": "自动调整每日份量",
+  "config.autoAdjustBudget.tooltip": "启用后，若当天库存减少，每种分配食物的份量预算\n将自动减少以匹配实际库存。\nHUD消息将确认已完成的调整。\n\n禁用时，仅触发HUD警报，并且不足的行将在\n饭盒UI中以红色高亮显示，以便手动调整。",
+
+  "config.openLunchPailKey.name": "打开饭盒",
+  "config.openLunchPailKey.tooltip": "用于打开饭盒管理界面的快捷键。"
+}

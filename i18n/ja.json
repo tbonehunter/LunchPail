@@ -1,0 +1,33 @@
+{
+  // i18n/ja.json — LunchPail Japanese translations
+
+  "config.section.stamina": "スタミナコンパートメント",
+  "config.section.health": "体力コンパートメント",
+  "config.section.foodSelection": "食料の選択",
+  "config.section.budgetAdjustment": "在庫調整",
+  "config.section.controls": "操作",
+
+  "config.staminaTargetFill.name": "スタミナ目標補充率 (%)",
+  "config.staminaTargetFill.tooltip": "食べることでスタミナがこの割合以上に回復する場合、\nスタミナ食料を自動的に消費します。\n例: 90 は、食料を食べると90%以上まで回復できるほど\nスタミナが低い場合に食べることを意味します。\n\n注意: 食料の回復量がこの目標を超える場合、\n発動ポイントは0%になります（この設定だけでは発動しません）。\n下の「スタミナ基準レベルを使用」を有効にして、この状況を防いでください。",
+
+  "config.useStaminaFloor.name": "スタミナ基準レベルを使用",
+  "config.useStaminaFloor.tooltip": "スタミナが25%を下回らないように食料を自動消費します。\n突然の消耗によるスタミナ切れを防ぐためです。\nこれは食料の回復値に関わらず発動し、\nスタミナが危機的に低い場合は目標補充率設定より優先されます。",
+
+  "config.healthTargetFill.name": "体力目標補充率 (%)",
+  "config.healthTargetFill.tooltip": "食べることで体力がこの割合以上に回復する場合、\n体力食料を自動的に消費します。\n例: 90 は、食料を食べると90%以上まで回復できるほど\n体力が低い場合に食べることを意味します。\n\n注意: 食料の回復量がこの目標を超える場合、\n発動ポイントは0%になります（この設定だけでは発動しません）。\n下の「体力基準レベルを使用」を有効にして、この状況を防いでください。",
+
+  "config.useHealthFloor.name": "体力基準レベルを使用",
+  "config.useHealthFloor.tooltip": "体力が25%を下回らないように食料を自動消費します。\n突然の消耗による死亡を防ぐためです。\nこれは食料の回復値に関わらず発動し、\n体力が危機的に低い場合は目標補充率設定より優先されます。",
+
+  "config.sortOrder.name": "消費順序",
+  "config.sortOrder.tooltip": "各コンパートメントでどの食料を最初に消費するかを決定します。\n低い方から: 良い食料を緊急時のために温存します（推奨）。\n高い方から: 即時の回復値を最大化します。\nランダム: 毎回シャッフルします。",
+  "config.sortOrder.lowestFirst": "低い方から",
+  "config.sortOrder.highestFirst": "高い方から",
+  "config.sortOrder.random": "ランダム",
+
+  "config.autoAdjustBudget.name": "毎日の在庫を自動調整",
+  "config.autoAdjustBudget.tooltip": "有効にすると、日中に在庫が減少した場合、\n各割り当て食料のサービング予算が実際の在庫に合わせて自動的に削減されます。\nHUDメッセージで調整が確認されます。\n\n無効にすると、HUDアラートのみが表示され、\n不足している行がランチペイルUIで赤くハイライトされ手動調整できます。",
+
+  "config.openLunchPailKey.name": "ランチペイルを開く",
+  "config.openLunchPailKey.tooltip": "ランチペイル管理UIを開くキーバインド。"
+}

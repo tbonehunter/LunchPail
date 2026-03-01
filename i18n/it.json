@@ -1,0 +1,33 @@
+{
+  // i18n/it.json — LunchPail Italian translations
+
+  "config.section.stamina": "Scomparto Energia",
+  "config.section.health": "Scomparto Salute",
+  "config.section.foodSelection": "Selezione Cibo",
+  "config.section.budgetAdjustment": "Regolazione Budget",
+  "config.section.controls": "Comandi",
+
+  "config.staminaTargetFill.name": "Riempimento Obiettivo Energia (%)",
+  "config.staminaTargetFill.tooltip": "Consuma automaticamente cibo per l'energia quando mangiarlo ripristinerebbe\nla tua energia almeno a questa percentuale del massimo.\nEsempio: 90 significa mangiare quando l'energia è abbastanza bassa da far sì\nche il cibo ti riporti al 90% o più del massimo.\n\nNota: se il valore di ripristino del cibo supera questo obiettivo, il punto\ndi attivazione diventa 0% (questa impostazione da sola non si attiva mai).\nAttiva 'Usa livello base di energia' per proteggerti da questo caso.",
+
+  "config.useStaminaFloor.name": "Usa Livello Base di Energia",
+  "config.useStaminaFloor.tooltip": "Non lascia mai scendere la tua Energia sotto il 25% senza consumare cibo,\nper evitare l'esaurimento da una deplezione improvvisa.\nQuesto si attiva indipendentemente dal valore di ripristino del cibo\ne sovrascrive l'impostazione di riempimento obiettivo quando l'energia è critica.",
+
+  "config.healthTargetFill.name": "Riempimento Obiettivo Salute (%)",
+  "config.healthTargetFill.tooltip": "Consuma automaticamente cibo per la salute quando mangiarlo ripristinerebbe\nla tua salute almeno a questa percentuale del massimo.\nEsempio: 90 significa mangiare quando la salute è abbastanza bassa da far sì\nche il cibo ti riporti al 90% o più del massimo.\n\nNota: se il valore di ripristino del cibo supera questo obiettivo, il punto\ndi attivazione diventa 0% (questa impostazione da sola non si attiva mai).\nAttiva 'Usa livello base di salute' per proteggerti da questo caso.",
+
+  "config.useHealthFloor.name": "Usa Livello Base di Salute",
+  "config.useHealthFloor.tooltip": "Non lascia mai scendere la tua Salute sotto il 25% senza consumare cibo,\nper evitare la morte da una deplezione improvvisa.\nQuesto si attiva indipendentemente dal valore di ripristino del cibo\ne sovrascrive l'impostazione di riempimento obiettivo quando la salute è critica.",
+
+  "config.sortOrder.name": "Ordine di Consumo",
+  "config.sortOrder.tooltip": "Determina quale cibo viene consumato per primo in ogni scomparto.\nIl più basso prima: conserva il cibo migliore per le emergenze (consigliato).\nIl più alto prima: massimizza il valore di ripristino immediato.\nCasuale: mescola ogni volta.",
+  "config.sortOrder.lowestFirst": "Il più basso prima",
+  "config.sortOrder.highestFirst": "Il più alto prima",
+  "config.sortOrder.random": "Casuale",
+
+  "config.autoAdjustBudget.name": "Regola automaticamente il budget giornaliero",
+  "config.autoAdjustBudget.tooltip": "Quando attivato, il budget di porzioni per ogni cibo assegnato viene ridotto\nautomaticamente per corrispondere all'inventario reale se le scorte sono calate durante il giorno.\nUn messaggio HUD confermerà la regolazione effettuata.\n\nQuando disattivato, viene emesso solo un avviso HUD e le righe in deficit\nsono evidenziate in rosso nell'interfaccia Lunch Pail per la regolazione manuale.",
+
+  "config.openLunchPailKey.name": "Apri Lunch Pail",
+  "config.openLunchPailKey.tooltip": "Tasto di scelta rapida per aprire l'interfaccia di gestione del Lunch Pail."
+}

@@ -1,0 +1,33 @@
+{
+  // i18n/de.json — LunchPail German translations
+
+  "config.section.stamina": "Ausdauer-Fach",
+  "config.section.health": "Gesundheits-Fach",
+  "config.section.foodSelection": "Lebensmittelauswahl",
+  "config.section.budgetAdjustment": "Budgetanpassung",
+  "config.section.controls": "Steuerung",
+
+  "config.staminaTargetFill.name": "Ausdauer-Zielfüllung (%)",
+  "config.staminaTargetFill.tooltip": "Konsumiert automatisch Ausdauernahrung, wenn das Essen deine Ausdauer\nauf mindestens diesen Prozentsatz auffullen würde.\nBeispiel: 90 bedeutet essen, wenn die Ausdauer so niedrig ist,\ndass das Essen sie auf 90 % oder mehr auffüllen würde.\n\nHinweis: Übersteigt der Wiederherstellungswert dieses Ziel,\nwird der Auslösepunkt 0 % (dieser Wert allein löst es nie aus).\nAktiviere 'Basisausdauer-Level verwenden' als Schutz dagegen.",
+
+  "config.useStaminaFloor.name": "Basisausdauer-Level verwenden",
+  "config.useStaminaFloor.tooltip": "Lässt die Ausdauer nie unter 25 % fallen, ohne Nahrung zu konsumieren,\num Erschöpfung durch plötzliche Entleerung zu vermeiden.\nDies wird unabhängig vom Wiederherstellungswert ausgelöst\nund überschreibt die Zielfüllung bei kritisch niedriger Ausdauer.",
+
+  "config.healthTargetFill.name": "Gesundheits-Zielfüllung (%)",
+  "config.healthTargetFill.tooltip": "Konsumiert automatisch Gesundheitsnahrung, wenn das Essen deine Gesundheit\nauf mindestens diesen Prozentsatz auffüllen würde.\nBeispiel: 90 bedeutet essen, wenn die Gesundheit so niedrig ist,\ndass das Essen sie auf 90 % oder mehr auffüllen würde.\n\nHinweis: Übersteigt der Wiederherstellungswert dieses Ziel,\nwird der Auslösepunkt 0 % (dieser Wert allein löst es nie aus).\nAktiviere 'Basisgesundheits-Level verwenden' als Schutz dagegen.",
+
+  "config.useHealthFloor.name": "Basisgesundheits-Level verwenden",
+  "config.useHealthFloor.tooltip": "Lässt die Gesundheit nie unter 25 % fallen, ohne Nahrung zu konsumieren,\num den Tod durch plötzliche Entleerung zu vermeiden.\nDies wird unabhängig vom Wiederherstellungswert ausgelöst\nund überschreibt die Zielfüllung bei kritisch niedriger Gesundheit.",
+
+  "config.sortOrder.name": "Verbrauchsreihenfolge",
+  "config.sortOrder.tooltip": "Bestimmt, welches Essen zuerst in jedem Fach verbraucht wird.\nNiedrigstes zuerst: Schont das beste Essen für Notfälle (empfohlen).\nHöchstes zuerst: Maximiert den sofortigen Wiederherstellungswert.\nZufällig: Wird bei jedem Mal neu gemischt.",
+  "config.sortOrder.lowestFirst": "Niedrigstes zuerst",
+  "config.sortOrder.highestFirst": "Höchstes zuerst",
+  "config.sortOrder.random": "Zufällig",
+
+  "config.autoAdjustBudget.name": "Tagesbudget automatisch anpassen",
+  "config.autoAdjustBudget.tooltip": "Wenn aktiviert, wird das Portionsbudget für jedes zugewiesene Essen\nautomatisch reduziert, wenn der Vorrat im Laufe des Tages gesunken ist.\nEine HUD-Nachricht bestätigt die Anpassung.\n\nWenn deaktiviert, wird nur ein HUD-Alarm ausgelöst und Defizitzeilen\nwerden im Lunchpail-UI rot hervorgehoben, sodass du manuell anpassen kannst.",
+
+  "config.openLunchPailKey.name": "Lunchpail öffnen",
+  "config.openLunchPailKey.tooltip": "Tastenkombination zum Öffnen der Lunchpail-Verwaltungsoberfläche."
+}
