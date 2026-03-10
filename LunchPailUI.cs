@@ -477,8 +477,12 @@ namespace TBoneHunter.LunchPail
         private static int GetCompartmentBudget(
             SObject food, List<LunchPailData.FoodTag> compartment)
         {
+            string? foodPreservedId = string.IsNullOrEmpty(food.preservedParentSheetIndex.Value)
+                ? null : food.preservedParentSheetIndex.Value;
             var tag = compartment.FirstOrDefault(t =>
-                t.ItemId == food.QualifiedItemId && t.Quality == food.Quality);
+                t.ItemId == food.QualifiedItemId
+                && t.Quality == food.Quality
+                && t.PreservedItemId == foodPreservedId);
             if (tag == null) return 0;
             return tag.MaxServings == int.MaxValue
                 ? food.Stack

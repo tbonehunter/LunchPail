@@ -288,17 +288,20 @@ namespace TBoneHunter.LunchPail
 
         /// <summary>
         /// Returns a compartment-aware string key for a FoodTag, used to key the
-        /// consumed-today dictionary. Format: "S_ItemId_Quality" or "H_ItemId_Quality".
+        /// consumed-today dictionary.
+        /// Format: "S_ItemId_Quality_PreservedId" or "H_ItemId_Quality_PreservedId".
+        /// PreservedId is empty string for normal (non-preserved) food items.
         /// </summary>
         private static string GetTagKey(LunchPailData.FoodTag tag, string compartmentPrefix) =>
-            compartmentPrefix + "_" + tag.ItemId + "_" + tag.Quality;
+            compartmentPrefix + "_" + tag.ItemId + "_" + tag.Quality + "_" + (tag.PreservedItemId ?? "");
 
         /// <summary>
         /// Returns the base (non-compartment-aware) key for a FoodTag.
         /// Used for deficit tracking which aggregates across both compartments.
+        /// PreservedId is empty string for normal (non-preserved) food items.
         /// </summary>
         private static string GetBaseTagKey(LunchPailData.FoodTag tag) =>
-            tag.ItemId + "_" + tag.Quality;
+            tag.ItemId + "_" + tag.Quality + "_" + (tag.PreservedItemId ?? "");
 
         /// <summary>
         /// Checks all tagged items across both compartments. When a real inventory
