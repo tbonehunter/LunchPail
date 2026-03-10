@@ -125,7 +125,7 @@ namespace TBoneHunter.LunchPail
                 {
                     FoodHelper.SilentConsume(next, player);
                     RecordConsumptionByItem(next, data.StaminaCompartment, StaminaPrefix);
-                    _monitor.Log($"[LunchPail] Auto-consumed {next.DisplayName} for stamina.", LogLevel.Trace);
+                    _monitor.Log($"[LunchPail] Auto-consumed {next.DisplayName} for stamina.", LogLevel.Debug);
 
                     // Warn once if stamina supply is now low
                     if (!_staminaLowNotified &&
@@ -164,7 +164,7 @@ namespace TBoneHunter.LunchPail
 
             FoodHelper.SilentConsume(fallbackNext, player);
             RecordConsumptionByItem(fallbackNext, data.HealthCompartment, HealthPrefix);
-            _monitor.Log($"[LunchPail] Fallback stamina consume: {fallbackNext.DisplayName}.", LogLevel.Trace);
+            _monitor.Log($"[LunchPail] Fallback stamina consume: {fallbackNext.DisplayName}.", LogLevel.Debug);
 
             // Warn once if the fallback compartment is also running low
             if (!_allLowNotified &&
@@ -190,7 +190,7 @@ namespace TBoneHunter.LunchPail
                 {
                     FoodHelper.SilentConsume(next, player);
                     RecordConsumptionByItem(next, data.HealthCompartment, HealthPrefix);
-                    _monitor.Log($"[LunchPail] Auto-consumed {next.DisplayName} for health.", LogLevel.Trace);
+                    _monitor.Log($"[LunchPail] Auto-consumed {next.DisplayName} for health.", LogLevel.Debug);
 
                     // Warn once if health supply is now low
                     if (!_healthLowNotified &&
@@ -229,7 +229,7 @@ namespace TBoneHunter.LunchPail
 
             FoodHelper.SilentConsume(fallbackNext, player);
             RecordConsumptionByItem(fallbackNext, data.StaminaCompartment, StaminaPrefix);
-            _monitor.Log($"[LunchPail] Fallback health consume: {fallbackNext.DisplayName}.", LogLevel.Trace);
+            _monitor.Log($"[LunchPail] Fallback health consume: {fallbackNext.DisplayName}.", LogLevel.Debug);
 
             // Warn once if the fallback compartment is also running low
             if (!_allLowNotified &&
