@@ -443,12 +443,19 @@ namespace TBoneHunter.LunchPail
 
         private void AssignFood(SObject food, bool isStamina, int maxServings = int.MaxValue)
         {
+            // Capture the preserved ingredient ID for items like jelly, pickle, wine, roe, etc.
+            // so that different varieties of the same base item are tracked independently.
+            string? preservedId = string.IsNullOrEmpty(food.preservedParentSheetIndex.Value)
+                ? null
+                : food.preservedParentSheetIndex.Value;
+
             var tag = new LunchPailData.FoodTag
             {
                 ItemId = food.QualifiedItemId,
                 Quality = food.Quality,
                 DisplayName = food.DisplayName,
-                MaxServings = maxServings
+                MaxServings = maxServings,
+                PreservedItemId = preservedId
             };
 
             if (isStamina)
@@ -481,8 +488,13 @@ namespace TBoneHunter.LunchPail
         private void UnassignFood(SObject food, bool isStamina)
         {
             var compartment = isStamina ? _data.StaminaCompartment : _data.HealthCompartment;
+            string? foodPreservedId = string.IsNullOrEmpty(food.preservedParentSheetIndex.Value)
+                ? null
+                : food.preservedParentSheetIndex.Value;
             var tag = compartment.FirstOrDefault(t =>
-                t.ItemId == food.QualifiedItemId && t.Quality == food.Quality);
+                t.ItemId == food.QualifiedItemId
+                && t.Quality == food.Quality
+                && t.PreservedItemId == foodPreservedId);
 
             if (tag != null)
             {

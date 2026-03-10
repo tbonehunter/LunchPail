@@ -56,6 +56,15 @@ namespace TBoneHunter.LunchPail
             /// Resets via ConsumptionManager.ResetSession each morning.
             /// </summary>
             public int MaxServings { get; set; } = int.MaxValue;
+
+            /// <summary>
+            /// For preserved-ingredient items (jelly, pickle, wine, roe, etc.) this holds
+            /// the ingredient's unqualified item ID (e.g. "638" for cherry jelly).
+            /// Null for all normal food items that have no preserved ingredient.
+            /// Captured at assignment time from SObject.preservedParentSheetIndex.
+            /// Backwards-compatible: old saves without this field deserialise to null.
+            /// </summary>
+            public string? PreservedItemId { get; set; } = null;
         }
     }
 }

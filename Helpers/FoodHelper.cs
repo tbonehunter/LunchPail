@@ -147,7 +147,8 @@ namespace TBoneHunter.LunchPail.Helpers
 
         /// <summary>
         /// Finds the first item in the player's inventory that matches
-        /// the given FoodTag (item ID and quality).
+        /// the given FoodTag (item ID, quality, and — for preserved-ingredient
+        /// items such as jelly or wine — the ingredient ID).
         /// Returns null if not found.
         /// </summary>
         public static SObject? FindTaggedItemInInventory(
@@ -158,7 +159,9 @@ namespace TBoneHunter.LunchPail.Helpers
             {
                 if (item is SObject obj
                     && obj.QualifiedItemId == tag.ItemId
-                    && obj.Quality == tag.Quality)
+                    && obj.Quality == tag.Quality
+                    && (tag.PreservedItemId == null
+                        || obj.preservedParentSheetIndex.Value == tag.PreservedItemId))
                 {
                     return obj;
                 }
