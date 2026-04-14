@@ -1,10 +1,14 @@
 // ModEntry.cs
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Xna.Framework.Graphics;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewValley;
 using StardewValley.GameData.Objects;
 using StardewValley.Menus;
+using TBoneHunter.LunchPail.Helpers;
 
 namespace TBoneHunter.LunchPail
 {
@@ -27,6 +31,8 @@ namespace TBoneHunter.LunchPail
         private const string UnlockItemId   = "tbonehunter.LunchPail_Unlock";
         private const string RecipeId       = "tbonehunter.LunchPail_Recipe";
         private const string ObjectTexture  = "Mods/TBoneHunter.LunchPail/Objects";
+
+        private const int HudDuration = 10000; // 10 seconds in ms
 
         // ----------------------------------------------------------------
         // SMAPI Entry
@@ -132,11 +138,26 @@ namespace TBoneHunter.LunchPail
 
         private void OnSaveLoaded(object? sender, SaveLoadedEventArgs e)
         {
-            _data = Helper.Data.ReadSaveData<LunchPailData>(DataKey)
-                ?? new LunchPailData();
+            if (Context.IsMainPlayer)
+            {
+                _data = Helper.Data.ReadSaveData<LunchPailData>(DataKey)
+                    ?? new LunchPailData();
+
+                // If saved data has items in compartments (e.g. crash recovery,
+                // or save during a day with virtual chest contents), return them
+                // to inventory on load so we start clean.
+                ReturnAllToInventoryOnLoad();
+            }
+            else
+            {
+                // Farmhands can't access host save data; use a fresh session-only instance.
+                _data = new LunchPailData();
+                Monitor.Log(
+                    "[LunchPail] Running as farmhand — save data is session-only (not persisted).",
+                    LogLevel.Debug);
+            }
 
             DeriveHasLunchPail();
-
             _consumptionManager.ResetSession();
             Monitor.Log(
                 $"[LunchPail] Save data loaded. HasLunchPail={_data.HasLunchPail}",
@@ -162,16 +183,21 @@ namespace TBoneHunter.LunchPail
         }
 
         // ----------------------------------------------------------------
-        // Day ending: clear compartments so the pail is empty for the next morning
+        // Day ending: return virtual chest items to inventory, then clear
         // ----------------------------------------------------------------
 
         private void OnDayEnding(object? sender, DayEndingEventArgs e)
         {
             if (!Context.IsWorldReady) return;
+            if (!_data.HasLunchPail) return;
+
+            ReturnVirtualChestItemsEndOfDay();
+
             _data.StaminaCompartment.Clear();
             _data.HealthCompartment.Clear();
-            Helper.Data.WriteSaveData(DataKey, _data);
-            Monitor.Log("[LunchPail] Compartments cleared for end of day.", LogLevel.Debug);
+            if (Context.IsMainPlayer)
+                Helper.Data.WriteSaveData(DataKey, _data);
+            Monitor.Log("[LunchPail] End of day: compartments cleared.", LogLevel.Debug);
         }
 
         // ----------------------------------------------------------------
@@ -229,7 +255,8 @@ namespace TBoneHunter.LunchPail
         private void ActivateLunchPail()
         {
             _data.HasLunchPail = true;
-            Helper.Data.WriteSaveData(DataKey, _data);
+            if (Context.IsMainPlayer)
+                Helper.Data.WriteSaveData(DataKey, _data);
 
             Game1.activeClickableMenu = new DialogueBox(
                 "You've assembled your Lunch Pail! Food in your inventory can now be " +
@@ -275,6 +302,188 @@ namespace TBoneHunter.LunchPail
             _data.HasLunchPail =
                 player.craftingRecipes.TryGetValue(RecipeId, out int timesCrafted)
                 && timesCrafted > 0;
+        }
+
+        // ----------------------------------------------------------------
+        // Virtual chest → inventory return logic
+        // ----------------------------------------------------------------
+
+        /// <summary>
+        /// Attempts to return all remaining virtual chest items from both
+        /// compartments to the player's inventory at end of day.
+        /// Items that fit are returned normally. Items that don't fit
+        /// (backpack full, no matching stack, no free slot) are lost —
+        /// the player is notified via a HUD message about the spoilage.
+        /// </summary>
+        private void ReturnVirtualChestItemsEndOfDay()
+        {
+            var player = Game1.player;
+            var spoiled = new List<(string displayName, int quantity)>();
+
+            Monitor.Log(
+                $"[LunchPail] ReturnVirtualChestItemsEndOfDay: StaminaTags={_data.StaminaCompartment.Count} HealthTags={_data.HealthCompartment.Count} FreeSlots={player.Items.Count(i => i == null)}",
+                LogLevel.Debug);
+
+            ReturnCompartmentItems(player, _data.StaminaCompartment, spoiled);
+            ReturnCompartmentItems(player, _data.HealthCompartment, spoiled);
+
+            if (spoiled.Count > 0)
+            {
+                // Build a concise spoilage summary.
+                // e.g., "3 Salad, 2 Parsnip"
+                var parts = new List<string>();
+                foreach (var (name, qty) in spoiled)
+                    parts.Add($"{qty} {name}");
+                string summary = string.Join(", ", parts);
+
+                string message = spoiled.Count == 1
+                    ? $"You had no room for your leftover {summary}. It spoiled overnight."
+                    : $"You had no room for some Lunch Pail leftovers. Spoiled: {summary}.";
+
+                Game1.addHUDMessage(new HUDMessage(message, HUDMessage.error_type)
+                    { timeLeft = HudDuration });
+
+                Monitor.Log(
+                    $"[LunchPail] End of day spoilage: {summary}",
+                    LogLevel.Info);
+            }
+        }
+
+        /// <summary>
+        /// Iterates through all tags in a compartment and attempts to return
+        /// each one to the player's inventory. Anything that can't be returned
+        /// is added to the spoiled list.
+        /// </summary>
+        private void ReturnCompartmentItems(
+            Farmer player,
+            List<LunchPailData.FoodTag> compartment,
+            List<(string displayName, int quantity)> spoiled)
+        {
+            foreach (var tag in compartment)
+            {
+                if (tag.Stack <= 0) continue;
+
+                int returned = TryReturnTagToInventory(player, tag);
+                int lost = tag.Stack; // whatever remains after the return attempt
+
+                if (lost > 0)
+                {
+                    spoiled.Add((tag.DisplayName, lost));
+                    Monitor.Log(
+                        $"[LunchPail] End of day: {lost} {tag.DisplayName} spoiled (no inventory space).",
+                        LogLevel.Debug);
+                }
+
+                if (returned > 0)
+                {
+                    Monitor.Log(
+                        $"[LunchPail] End of day: returned {returned} {tag.DisplayName} to inventory.",
+                        LogLevel.Debug);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Attempts to return as many items as possible from a tag to the
+        /// player's inventory. First tries to stack onto an existing matching
+        /// item, then tries to create a new stack in a free slot.
+        /// Returns the number of items successfully returned.
+        /// Decrements tag.Stack for each item returned; any remaining
+        /// in tag.Stack after this call could not be returned.
+        /// </summary>
+        private int TryReturnTagToInventory(Farmer player, LunchPailData.FoodTag tag)
+        {
+            int totalReturned = 0;
+
+            // First: try to add to an existing matching stack in inventory
+            var existing = FoodHelper.FindTaggedItemInInventory(player, tag);
+            if (existing != null && tag.Stack > 0)
+            {
+                // Stardew doesn't enforce a per-slot stack cap for most items,
+                // so we can add the full remaining amount to the existing stack.
+                int toAdd = tag.Stack;
+                existing.Stack += toAdd;
+                tag.Stack -= toAdd;
+                totalReturned += toAdd;
+            }
+
+            // Second: if there's still a remainder, try a free slot
+            if (tag.Stack > 0)
+            {
+                // Check for a free inventory slot
+                bool hasFreeSlot = false;
+                for (int i = 0; i < player.Items.Count; i++)
+                {
+                    if (player.Items[i] == null)
+                    {
+                        hasFreeSlot = true;
+                        break;
+                    }
+                }
+
+                if (hasFreeSlot)
+                {
+                    var newItem = FoodHelper.CreateInventoryItem(tag, tag.Stack);
+                    if (newItem != null)
+                    {
+                        player.addItemToInventory(newItem);
+                        totalReturned += tag.Stack;
+                        tag.Stack = 0;
+                    }
+                }
+            }
+
+            return totalReturned;
+        }
+
+        /// <summary>
+        /// Safety net: if saved data somehow contains virtual chest items
+        /// at load time (e.g., crash mid-day, or save file edited), attempt
+        /// to return them to inventory so the player doesn't lose food silently.
+        /// Any items that can't be returned are logged but not spoiled — the
+        /// player just started their day and deserves a clean slate.
+        /// </summary>
+        private void ReturnAllToInventoryOnLoad()
+        {
+            var player = Game1.player;
+            bool hadItems = false;
+
+            foreach (var tag in _data.StaminaCompartment)
+            {
+                if (tag.Stack <= 0) continue;
+                hadItems = true;
+                int returned = TryReturnTagToInventory(player, tag);
+                if (tag.Stack > 0)
+                    Monitor.Log(
+                        $"[LunchPail] Load recovery: could not return {tag.Stack} {tag.DisplayName} (no space). Items lost.",
+                        LogLevel.Warn);
+                else if (returned > 0)
+                    Monitor.Log(
+                        $"[LunchPail] Load recovery: returned {returned} {tag.DisplayName} to inventory.",
+                        LogLevel.Debug);
+            }
+
+            foreach (var tag in _data.HealthCompartment)
+            {
+                if (tag.Stack <= 0) continue;
+                hadItems = true;
+                int returned = TryReturnTagToInventory(player, tag);
+                if (tag.Stack > 0)
+                    Monitor.Log(
+                        $"[LunchPail] Load recovery: could not return {tag.Stack} {tag.DisplayName} (no space). Items lost.",
+                        LogLevel.Warn);
+                else if (returned > 0)
+                    Monitor.Log(
+                        $"[LunchPail] Load recovery: returned {returned} {tag.DisplayName} to inventory.",
+                        LogLevel.Debug);
+            }
+
+            if (hadItems)
+            {
+                _data.StaminaCompartment.Clear();
+                _data.HealthCompartment.Clear();
+                Monitor.Log("[LunchPail] Load recovery: compartments cleared after returning items.", LogLevel.Debug);
+            }
         }
     }
 }
